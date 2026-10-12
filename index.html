@@ -1,1 +1,704 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#2f6f3e"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Tree Quotes"><title>Tree Meister Quote App</title><link rel="manifest" href="manifest.webmanifest"><style>body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;background:#f5f6f3;color:#172018}.wrap{max-width:860px;margin:auto;padding:14px}.card{background:#fff;border:1px solid #d8ddd7;border-radius:16px;padding:14px;margin-bottom:12px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}@media(max-width:650px){.grid,.grid4{grid-template-columns:1fr 1fr}}label{display:block;font-size:13px;color:#667067;margin-bottom:4px}input,select,textarea,button{font:inherit}input,select,textarea{width:100%;box-sizing:border-box;padding:11px;border:1px solid #d8ddd7;border-radius:10px;font-size:16px}textarea{min-height:70px}button{border:1px solid #d8ddd7;background:#fff;border-radius:10px;padding:11px;min-height:44px}.primary,.active{background:#2f6f3e;color:white;border-color:#2f6f3e}.row,.space{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.space{justify-content:space-between;align-items:flex-start}.muted{color:#667067}.hidden{display:none}.check{display:flex;gap:8px;align-items:center;margin:8px 0}.check input{width:auto}.item{border:1px solid #d8ddd7;border-radius:12px;padding:12px;margin-top:10px}.desc{white-space:pre-wrap;line-height:1.45;margin:8px 0}.price{font-size:20px;font-weight:800}.total{font-size:26px;font-weight:900}.small{padding:8px 10px;min-height:38px}.danger{color:#a43838}</style></head><body><div class="wrap"><h1>Tree Meister Quote App</h1><p class="muted">Saved jobs stay on this device.</p><div class="card"><div class="space"><strong>Saved jobs</strong><button id="newJob" class="small primary">New job</button></div><div class="grid" style="margin-top:10px"><div><label>Current job name</label><input id="jobName" placeholder="Smith - Oak St"></div><div><label>Open saved job</label><select id="jobSelect"></select></div></div><div class="row" style="margin-top:10px"><button id="saveJob" class="small primary">Save job</button><button id="deleteJob" class="small danger">Delete current job</button><span id="jobStatus" class="muted"></span></div></div><details class="card"><summary><strong>Rates & pricing</strong></summary><div class="grid" style="margin-top:10px"><div><label>Removal $/hr</label><input id="rateRemoval" type="number"></div><div><label>Trimming $/hr</label><input id="rateTrim" type="number"></div><div><label>Stump $/hr</label><input id="rateStump" type="number"></div><div><label>Cabling $/hr</label><input id="rateCable" type="number"></div></div></details><div class="card"><strong>Add line item</strong><div class="grid4" style="margin-top:10px"><button class="typeBtn active" data-type="Removal">Removal</button><button class="typeBtn" data-type="Trim">Trim</button><button class="typeBtn" data-type="Cable">Cable</button><button class="typeBtn" data-type="Stump">Stump</button></div><div class="grid" style="margin-top:10px"><div><label>Estimated hours</label><input id="hours" type="number" min="0" step=".25"></div><div><label>Tree & location</label><input id="treeLocation" placeholder="Sugar maple in backyard"></div></div><div id="removalOptions" style="margin-top:10px"><div class="grid"><div><label>Stump height (inches)</label><input id="stumpHeight" type="number" value="6"></div><div><label>Brush & log handling</label><select id="removalDebris"><option value="haul">Haul all brush & logs</option><option value="leaveAll">Leave all</option><option value="leaveLogs">Leaving logs</option><option value="leaveRounds">Leaving rounds</option></select></div></div></div><div id="trimOptions" class="hidden" style="margin-top:10px"><label class="check"><input id="dead2" type="checkbox">Removing any deadwood 2” or bigger.</label><label class="check"><input id="deadAll" type="checkbox">Removing any deadwood.</label><div class="grid"><label class="check"><input id="raiseCanopy" type="checkbox">Raise canopy to:</label><input id="canopyHeight" placeholder="8’"></div><label class="check"><input id="suckers" type="checkbox">Removing the lower suckers.</label><label class="check"><input id="marked" type="checkbox">Removing the marked limbs.</label><div class="grid"><label class="check"><input id="houseClear" type="checkbox">House clearance by:</label><input id="houseDistance" placeholder="4’"></div><div class="grid"><label class="check"><input id="otherTreeClear" type="checkbox">Trim around other tree by:</label><input id="otherTreeDistance" placeholder="4’"></div><label class="check"><input id="video" type="checkbox" checked>Video will show more detail.</label><label>Brush & log handling</label><select id="trimDebris"><option value="haul">Haul all trimming debris</option><option value="leaveAll">Leave all</option><option value="leaveLogs">Leaving logs</option><option value="leaveRounds">Leaving rounds</option></select><label style="margin-top:8px">Other trimming detail</label><input id="trimOther"></div><div id="stumpOptions" class="hidden" style="margin-top:10px"><label>Mulch handling</label><select id="mulch"><option value="haul">Haul excess mulch</option><option value="leave">Leave excess mulch</option></select></div><div id="cableOptions" class="hidden" style="margin-top:10px"><label>Cable location / union</label><input id="cableLocation"></div><label style="margin-top:10px">Extra notes</label><textarea id="notes"></textarea><div class="row" style="margin-top:10px"><button id="addItem" class="primary">Add line item</button><span id="status" class="muted"></span></div></div><details class="card"><summary><strong>Crane pricing</strong></summary><div class="grid" style="margin-top:10px"><div><label>Crane $/hr</label><input id="craneRate" type="number"></div><div><label>Number of picks</label><input id="cranePicks" type="number" value="0"></div><div><label>Time per pick (hr)</label><input id="craneTimePerPick" type="number" step=".05" value=".25"></div><div><label>Travel time (hr)</label><input id="craneTravel" type="number" step=".25" value="0"></div></div><div class="space" style="margin-top:10px"><span>Crane time: <strong id="craneHours">0 hr</strong></span><span>Cost: <strong id="craneCost">$0.00</strong></span></div><button id="addCrane" class="primary" style="margin-top:10px">Add crane line item</button></details><div class="card"><div class="space"><div><strong>Quote line items</strong><div class="muted">Copy each description into Jobber.</div></div><button id="clearAll" class="small danger">Clear all</button></div><div id="items"></div></div><div class="card"><div class="space"><span>Total estimated hours: <strong id="totalHours">0 hr</strong></span><span class="total" id="grandTotal">$0.00</span></div></div></div><script src="app.js"></script></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#2f6f3e">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Tree Quotes">
+<link rel="manifest" href="manifest.webmanifest">
+<title>Tree Meister Quote App</title>
+<style>
+:root{
+  --bg:#f5f6f3; --card:#ffffff; --text:#172018; --muted:#667067; --border:#d8ddd7;
+  --accent:#2f6f3e; --accent2:#eaf3ec; --danger:#a43838;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:var(--text)}
+.wrap{max-width:860px;margin:0 auto;padding:18px}
+h1{font-size:24px;margin:0 0 4px}
+.sub{color:var(--muted);margin-bottom:18px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px;margin-bottom:14px}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.grid4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+@media(max-width:650px){.grid,.grid4{grid-template-columns:1fr 1fr}.wrap{padding:12px}}
+@media(max-width:420px){.grid4{grid-template-columns:1fr 1fr}}
+label{display:block;font-size:13px;color:var(--muted);margin-bottom:5px}
+input,select,textarea,button{font:inherit}
+input,select,textarea{width:100%;padding:11px 12px;border:1px solid var(--border);border-radius:10px;background:white;color:var(--text);font-size:16px}
+textarea{min-height:76px;resize:vertical}
+button{border:1px solid var(--border);background:white;border-radius:10px;padding:11px 13px;min-height:44px;cursor:pointer}
+button.primary{background:var(--accent);color:white;border-color:var(--accent);font-weight:700}
+button.active{background:var(--accent2);border-color:var(--accent);color:var(--accent);font-weight:700}
+button.small{padding:8px 10px;min-height:38px;font-size:14px}
+button.danger{color:var(--danger)}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.space{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.muted{color:var(--muted)}
+.check{display:flex;gap:8px;align-items:center;margin:8px 0;color:var(--text);font-size:15px}
+.check input{width:auto}
+.hidden{display:none}
+.item{border:1px solid var(--border);border-radius:14px;padding:14px;margin-top:10px}
+.item h3{margin:0;font-size:17px}
+.price{font-size:20px;font-weight:800}
+.desc{white-space:pre-wrap;line-height:1.45;margin:10px 0;color:#263028}
+.actions{display:flex;gap:8px;flex-wrap:wrap}
+.total{font-size:26px;font-weight:900}
+.rate-note{font-size:12px;color:var(--muted);margin-top:6px}
+details summary{cursor:pointer;font-weight:800}
+.section-title{font-weight:800;margin-bottom:10px}
+.pill{display:inline-block;background:var(--accent2);color:var(--accent);border-radius:999px;padding:4px 8px;font-size:12px;font-weight:700}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Tree Meister Quote App</h1>
+  <div class="sub">Save estimates by job, build Jobber-ready line items, and come back to them later. Saved jobs stay in this browser on this device.</div>
+<div class="card" style="padding:10px 14px"><strong>Auto-save is on.</strong> You can close this page and reopen this same file later on this device.</div>
+
+  <div class="card">
+    <div class="space">
+      <div>
+        <div class="section-title">Saved jobs</div>
+        <div class="muted">Each job keeps its own line items until you delete it.</div>
+      </div>
+      <button id="newJob" class="small primary">New job</button>
+    </div>
+    <div class="grid" style="margin-top:12px">
+      <div>
+        <label>Current job name</label>
+        <input id="jobName" type="text" placeholder="e.g. Smith - Oak St">
+      </div>
+      <div>
+        <label>Open saved job</label>
+        <select id="jobSelect"></select>
+      </div>
+    </div>
+    <div class="row" style="margin-top:12px">
+      <button id="saveJob" class="small primary">Save job</button>
+      <button id="deleteJob" class="small danger">Delete current job</button>
+      <span id="jobStatus" class="muted"></span>
+    </div>
+  </div>
+
+  <details class="card">
+    <summary>Rates & pricing settings</summary>
+    <div style="height:12px"></div>
+    <div class="grid">
+      <div><label>Removal hourly rate ($/hr)</label><input id="rateRemoval" type="number" min="0" step="1" placeholder="Enter rate"></div>
+      <div><label>Trimming hourly rate ($/hr)</label><input id="rateTrim" type="number" min="0" step="1" placeholder="Enter rate"></div>
+      <div><label>Stump hourly rate ($/hr)</label><input id="rateStump" type="number" min="0" step="1" placeholder="Enter rate"></div>
+      <div><label>Cabling hourly rate ($/hr)</label><input id="rateCable" type="number" min="0" step="1" placeholder="Enter rate"></div>
+    </div>
+    <div class="rate-note">Rates are saved on this device. Enter the same rates you use in your existing calculator.</div>
+  </details>
+
+  <div class="card">
+    <div class="section-title">Add line item</div>
+    <div class="grid4">
+      <button class="typeBtn active" data-type="Removal">Removal</button>
+      <button class="typeBtn" data-type="Trim">Trim</button>
+      <button class="typeBtn" data-type="Cable">Cable</button>
+      <button class="typeBtn" data-type="Stump">Stump</button>
+    </div>
+
+    <div style="height:14px"></div>
+    <div class="grid">
+      <div>
+        <label>Estimated time (hours)</label>
+        <input id="hours" type="number" min="0" step=".25" placeholder="2.5">
+      </div>
+      <div>
+        <label>Tree & location</label>
+        <input id="treeLocation" type="text" placeholder="e.g. Sugar maple in the backyard">
+      </div>
+    </div>
+
+    <div id="removalOptions" style="margin-top:12px">
+      <div class="grid">
+        <div>
+          <label>Stump height after removal (inches above ground)</label>
+          <input id="stumpHeight" type="number" min="0" step="1" value="6" inputmode="numeric">
+          <div class="rate-note">Defaults to 6”. Adjust only when needed.</div>
+        </div>
+        <div>
+          <label>Brush & log handling</label>
+          <select id="removalDebris">
+            <option value="haul">Haul all brush & logs</option>
+            <option value="leaveAll">Leave all</option>
+            <option value="leaveLogs">Leaving logs</option>
+            <option value="leaveRounds">Leaving rounds</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div id="trimOptions" class="hidden" style="margin-top:12px">
+      <div class="check"><input id="dead2" type="checkbox"><span>Removing any deadwood 2” or bigger. <span class="muted"></span></span></div>
+      <div class="check"><input id="deadAll" type="checkbox"><span>Removing any deadwood.</span></div>
+      <div class="check"><input id="lowerDeadwood" type="checkbox"><span>Lower deadwood up to 15’.</span></div>
+      <div class="grid">
+        <div class="check"><input id="raiseCanopy" type="checkbox"><span>Raise canopy to:</span></div>
+        <div><input id="canopyHeight" type="text" placeholder="e.g. 8’"></div>
+      </div>
+      <div class="check"><input id="suckers" type="checkbox"><span>Removing the lower suckers.</span></div>
+      <div class="check"><input id="marked" type="checkbox"><span>Removing the marked limbs.</span></div>
+      <div class="grid">
+        <div class="check"><input id="houseClear" type="checkbox"><span>House clearance by:</span></div>
+        <div><input id="houseDistance" type="text" placeholder="e.g. 4’"></div>
+      </div>
+      <div class="grid">
+        <div class="check"><input id="otherTreeClear" type="checkbox"><span>Trim around the other tree by:</span></div>
+        <div><input id="otherTreeDistance" type="text" placeholder="e.g. 4’"></div>
+      </div>
+      <div class="check"><input id="video" type="checkbox" checked><span>Video will show more detail.</span></div>
+      <label>Brush & log handling</label>
+      <select id="trimDebris">
+        <option value="haul">Haul all trimming debris</option>
+        <option value="leaveAll">Leave all</option>
+        <option value="leaveLogs">Leaving logs</option>
+        <option value="leaveRounds">Leaving rounds</option>
+      </select>
+      <div style="height:10px"></div>
+      <label>Other trimming detail</label>
+      <input id="trimOther" type="text" placeholder="Optional extra trimming instruction">
+    </div>
+
+    <div id="stumpOptions" class="hidden" style="margin-top:12px">
+      <label>Mulch handling</label>
+      <select id="mulch">
+        <option value="haul">Haul excess mulch</option>
+        <option value="leave">Leave excess mulch</option>
+      </select>
+    </div>
+
+    <div id="cableOptions" class="hidden" style="margin-top:12px">
+      <label>Cable location / union</label>
+      <input id="cableLocation" type="text" placeholder="e.g. main codominant union of the backyard maple">
+    </div>
+
+    <div style="margin-top:12px">
+      <label>Extra notes (optional)</label>
+      <textarea id="notes" placeholder="Optional wording to append"></textarea>
+    </div>
+
+    <div class="row" style="margin-top:12px">
+      <button id="addItem" class="primary">Add line item</button>
+      <span id="status" class="muted"></span>
+    </div>
+  </div>
+
+  <details class="card">
+    <summary>Crane pricing <span class="pill">separate</span></summary>
+    <div style="height:12px"></div>
+    <div class="grid">
+      <div><label>Crane hourly rate ($/hr)</label><input id="craneRate" type="number" min="0" step="1" placeholder="Enter rate"></div>
+      <div><label>Number of picks</label><input id="cranePicks" type="number" min="0" step="1" value="0"></div>
+      <div><label>Time per pick (hours)</label><input id="craneTimePerPick" type="number" min="0" step=".05" value=".25"></div>
+      <div><label>Travel time (hours)</label><input id="craneTravel" type="number" min="0" step=".25" value="0"></div>
+    </div>
+    <div class="space" style="margin-top:12px">
+      <div>
+        <div class="muted">Calculated crane time</div>
+        <strong id="craneHours">0 hr</strong>
+      </div>
+      <div style="text-align:right">
+        <div class="muted">Crane cost</div>
+        <strong id="craneCost">$0.00</strong>
+      </div>
+    </div>
+    <div class="row" style="margin-top:12px">
+      <button id="addCrane" class="primary">Add crane as separate line item</button>
+    </div>
+  </details>
+
+  <div class="card">
+    <div class="space">
+      <div>
+        <div class="section-title">Jobber</div>
+        <div class="muted">Create a draft Jobber quote from this saved job. Nothing is sent to the customer automatically.</div>
+      </div>
+      <span id="jobberStatus" class="pill">Not connected</span>
+    </div>
+    <div class="grid" style="margin-top:12px">
+      <div>
+        <label>Client</label>
+        <input id="jobberClient" type="text" placeholder="Search/select client after connection" disabled>
+      </div>
+      <div>
+        <label>Property</label>
+        <input id="jobberProperty" type="text" placeholder="Select property after connection" disabled>
+      </div>
+    </div>
+    <div class="row" style="margin-top:12px">
+      <button id="connectJobber" class="small">Connect Jobber</button>
+      <button id="sendJobber" class="small primary" disabled>Create draft quote in Jobber</button>
+      <span id="jobberMessage" class="muted"></span>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="space">
+      <div>
+        <div class="section-title">Quote line items</div>
+        <div class="muted">Use the Copy Description button for Jobber.</div>
+      </div>
+      <button id="clearAll" class="small danger">Clear all</button>
+    </div>
+    <div id="items"><div class="muted" style="padding:12px 0">No line items yet.</div></div>
+  </div>
+
+  <div class="card">
+    <div class="space">
+      <div>
+        <div class="muted">Total estimated crew time</div>
+        <strong id="totalHours">0 hr</strong>
+      </div>
+      <div style="text-align:right">
+        <div class="muted">Quote total</div>
+        <div id="grandTotal" class="total">$0.00</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+  let selectedType = 'Removal';
+  let items = [];
+  const STORAGE_KEY = 'treeMeisterQuoteJobsV2';
+  let currentJobId = null;
+  let jobs = {};
+  const $ = id => document.getElementById(id);
+  const money = n => '$' + (Number(n)||0).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
+
+  function collectFields(){
+    const fields = {};
+    document.querySelectorAll('input, select, textarea').forEach(el=>{
+      if(!el.id || ['jobName','jobSelect','jobberClient','jobberProperty'].includes(el.id)) return;
+      fields[el.id] = el.type === 'checkbox' ? el.checked : el.value;
+    });
+    return fields;
+  }
+
+  function applyFields(fields){
+    Object.entries(fields || {}).forEach(([id,val])=>{
+      const el = document.getElementById(id);
+      if(!el) return;
+      if(el.type === 'checkbox') el.checked = !!val;
+      else el.value = val;
+    });
+  }
+
+  function blankWorkingFields(){
+    const preserveRates = ['rateRemoval','rateTrim','rateStump','rateCable','craneRate','craneTimePerPick'];
+    document.querySelectorAll('input, textarea').forEach(el=>{
+      if(!el.id || ['jobName','jobberClient','jobberProperty'].includes(el.id) || preserveRates.includes(el.id)) return;
+      if(el.type === 'checkbox') el.checked = false;
+      else if(el.id === 'cranePicks' || el.id === 'craneTravel') el.value = '0';
+      else el.value = '';
+    });
+    if($('video')) $('video').checked = true;
+    if($('stumpHeight')) $('stumpHeight').value = '6';
+    if($('mulch')) $('mulch').value = 'haul';
+    selectedType = 'Removal';
+    showType('Removal');
+  }
+
+  function persistAll(){
+    try{
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({currentJobId,jobs}));
+    }catch(e){}
+  }
+
+  function saveCurrentJob(silent=true){
+    if(!currentJobId) return;
+    const name = ($('jobName')?.value || '').trim();
+    jobs[currentJobId] = {
+      id: currentJobId,
+      name,
+      updatedAt: new Date().toISOString(),
+      items: JSON.parse(JSON.stringify(items)),
+      selectedType,
+      fields: collectFields()
+    };
+    persistAll();
+    refreshJobSelect();
+    if(!silent && $('jobStatus')){
+      $('jobStatus').textContent='Saved';
+      setTimeout(()=>{ if($('jobStatus')) $('jobStatus').textContent=''; },1200);
+    }
+  }
+
+  function loadJobs(){
+    try{
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if(raw){
+        const state = JSON.parse(raw);
+        jobs = state.jobs || {};
+        currentJobId = state.currentJobId || null;
+      }
+    }catch(e){}
+    if(!currentJobId || !jobs[currentJobId]){
+      createNewJob('', false);
+    }else{
+      loadJob(currentJobId);
+    }
+  }
+
+  function refreshJobSelect(){
+    const sel = $('jobSelect');
+    if(!sel) return;
+    sel.innerHTML='';
+    const arr = Object.values(jobs).sort((a,b)=>(b.updatedAt||'').localeCompare(a.updatedAt||''));
+    arr.forEach(job=>{
+      const o=document.createElement('option');
+      o.value=job.id;
+      o.textContent=job.name || 'Untitled job';
+      if(job.id===currentJobId) o.selected=true;
+      sel.appendChild(o);
+    });
+  }
+
+  function createNewJob(name='', load=true){
+    if(currentJobId && jobs[currentJobId]) saveCurrentJob(true);
+    const id='job_'+Date.now()+'_'+Math.random().toString(36).slice(2,7);
+    currentJobId=id;
+    items=[];
+    blankWorkingFields();
+    if($('jobName')) $('jobName').value=name;
+    jobs[id]={id,name,updatedAt:new Date().toISOString(),items:[],selectedType:'Removal',fields:collectFields()};
+    persistAll();
+    refreshJobSelect();
+    if(load) render();
+  }
+
+  function loadJob(id){
+    if(!jobs[id]) return;
+    currentJobId=id;
+    const job=jobs[id];
+    items=Array.isArray(job.items) ? JSON.parse(JSON.stringify(job.items)) : [];
+    selectedType=job.selectedType || 'Removal';
+    blankWorkingFields();
+    applyFields(job.fields || {});
+    if($('jobName')) $('jobName').value=job.name || '';
+    showType(selectedType);
+    refreshJobSelect();
+    calcCrane();
+    render();
+  }
+
+  function deleteCurrentJob(){
+    if(!currentJobId) return;
+    delete jobs[currentJobId];
+    const ids=Object.keys(jobs);
+    if(ids.length){
+      currentJobId=ids[0];
+      loadJob(currentJobId);
+    }else{
+      currentJobId=null;
+      createNewJob('', true);
+    }
+    persistAll();
+  }
+
+  function saveState(){ saveCurrentJob(true); }
+  function currentRate(){
+    const map={Removal:'rateRemoval',Trim:'rateTrim',Stump:'rateStump',Cable:'rateCable'};
+    return Number($(map[selectedType]).value)||0;
+  }
+  function round5(n){ return Math.round((Number(n)||0)/5)*5; }
+
+  function cleanText(value){
+    let v=String(value||'').trim().replace(/\s+/g,' ');
+    v=v.replace(/\s+([,.;:!?])/g,'$1');
+    v=v.replace(/([,.;:!?])([^\s])/g,'$1 $2');
+    return v;
+  }
+  function sentence(value){
+    let v=cleanText(value);
+    if(!v) return '';
+    v=v.charAt(0).toUpperCase()+v.slice(1);
+    if(!/[.!?]$/.test(v)) v+='.';
+    return v;
+  }
+  function lowerLead(value){
+    const v=cleanText(value);
+    if(!v) return '';
+    if(/^A\s/.test(v)) return 'a '+v.slice(2);
+    if(/^An\s/.test(v)) return 'an '+v.slice(3);
+    if(/^The\s/.test(v)) return 'the '+v.slice(4);
+    return v.charAt(0).toLowerCase()+v.slice(1);
+  }
+  function grammarCorrect(text){
+    return String(text||'')
+      .replace(/\bRemvoing\b/gi,'Removing')
+      .replace(/\bteh\b/gi,'the')
+      .replace(/\brecieve\b/gi,'receive')
+      .replace(/\bseperate\b/gi,'separate')
+      .replace(/[ \t]+\n/g,'\n')
+      .replace(/\n{3,}/g,'\n\n')
+      .trim();
+  }
+  function debrisWording(value, trimming=false){
+    if(value==='leaveAll') return 'Leaving all brush and logs where they land.';
+    if(value==='leaveLogs') return 'Leaving the logs cut into 2–10’ lengths in a pile.';
+    if(value==='leaveRounds') return 'Leaving the logs cut into approximately 16” rounds in a pile. Please note: this option will produce a large amount of sawdust that we will be unable to fully clean up.';
+    return trimming ? 'Includes removal of all debris resulting from the trimming process.' : 'Includes removing all brush and logs.';
+  }
+
+  function showType(type){
+    selectedType=type;
+    document.querySelectorAll('.typeBtn').forEach(b=>b.classList.toggle('active',b.dataset.type===type));
+    $('removalOptions').classList.toggle('hidden',type!=='Removal');
+    $('trimOptions').classList.toggle('hidden',type!=='Trim');
+    $('stumpOptions').classList.toggle('hidden',type!=='Stump');
+    $('cableOptions').classList.toggle('hidden',type!=='Cable');
+    $('treeLocation').placeholder = type==='Stump' ? 'e.g. apple stump near the garage' :
+      type==='Cable' ? 'e.g. Sugar maple in the backyard' :
+      type==='Removal' ? 'e.g. uprooted apple near the garage' :
+      'e.g. Sugar maple in the backyard';
+  }
+
+  document.querySelectorAll('.typeBtn').forEach(b=>b.addEventListener('click',()=>{showType(b.dataset.type);saveState();}));
+
+  function buildDescription(){
+    const tl=cleanText($('treeLocation').value);
+    const notes=sentence($('notes').value);
+    let t='';
+    if(selectedType==='Removal'){
+      const h=Math.max(0,Number($('stumpHeight').value)||6);
+      t=`Removing ${lowerLead(tl) || 'the tree'}.\n${debrisWording($('removalDebris').value,false)}\nLeaving the stump(s) cut ${h} inch${h===1?'':'es'} above the ground.`;
+    }
+    if(selectedType==='Trim'){
+      t=`Trimming ${tl || 'the tree'}.`;
+      const bullets=[];
+      if($('dead2').checked) bullets.push('Removing all deadwood 2” in diameter or larger.');
+      if($('deadAll').checked) bullets.push('Removing all deadwood.');
+      if($('lowerDeadwood')?.checked) bullets.push('Removing the lower deadwood up to 15’.');
+      if($('raiseCanopy').checked) bullets.push(`Raising the canopy to ${cleanText($('canopyHeight').value) || '____'}.`);
+      if($('suckers').checked) bullets.push('Removing the lower suckers.');
+      if($('marked').checked) bullets.push('Removing the marked limbs.');
+      if($('houseClear').checked) bullets.push(`Providing ${cleanText($('houseDistance').value) || '____'} of clearance around the house.`);
+      if($('otherTreeClear').checked) bullets.push(`Trimming around the other tree to provide ${cleanText($('otherTreeDistance').value) || '____'} of clearance.`);
+      const other=sentence($('trimOther').value);
+      if(other) bullets.push(other);
+      if($('video').checked) bullets.push('Video will provide more detail.');
+      if(bullets.length) t += '\n' + bullets.map(x=>'•'+x).join('\n');
+      t += '\n' + debrisWording($('trimDebris').value,true);
+    }
+    if(selectedType==='Stump'){
+      t=`Grinding ${lowerLead(tl) || 'the stump'} 6 inches below the surface.\n`;
+      t += $('mulch').value==='haul'
+        ? 'Includes hauling away the excess mulch and leaving the area level.'
+        : 'Leaving the excess mulch in a pile next to the stump.';
+    }
+    if(selectedType==='Cable'){
+      const loc=cleanText($('cableLocation').value) || tl || 'the selected tree union';
+      t=`Installing a cable in ${loc}.\nUtilizing a steel cabling system with EHS (extra high strength) cable to mitigate the risk of tree or limb splitting.\nThis service includes both materials and installation.\n\nFor optimal effectiveness, we strongly advise scheduling regular inspections of the cabling system every 2–4 years.`;
+    }
+    if(notes) t += '\n' + notes;
+    return grammarCorrect(t);
+  }
+
+  function render(){
+    const box=$('items');
+    if(!items.length){box.innerHTML='<div class="muted" style="padding:12px 0">No line items yet.</div>';}
+    else{
+      box.innerHTML='';
+      items.forEach((it,i)=>{
+        const div=document.createElement('div');
+        div.className='item';
+        div.innerHTML=`
+          <div class="space">
+            <div><h3>${it.type}</h3><div class="muted">${it.hours.toFixed(2).replace(/\.00$/,'')} hr internal estimate</div></div>
+            <div class="price">${money(it.price)}</div>
+          </div>
+          <div class="desc"></div>
+          <div class="actions">
+            <button class="small copyDesc">Copy Description</button>
+            <button class="small copyFull">Copy Full Line</button>
+            <button class="small danger remove">Remove</button>
+          </div>`;
+        div.querySelector('.desc').textContent=it.description;
+        div.querySelector('.copyDesc').addEventListener('click',()=>copyText(it.description,div.querySelector('.copyDesc')));
+        div.querySelector('.copyFull').addEventListener('click',()=>copyText(`${it.type} — ${money(it.price)}\n${it.description}`,div.querySelector('.copyFull')));
+        div.querySelector('.remove').addEventListener('click',()=>{items.splice(i,1);render();});
+        box.appendChild(div);
+      });
+    }
+    $('totalHours').textContent=(items.reduce((s,x)=>s+x.hours,0)).toFixed(2).replace(/\.00$/,'')+' hr';
+    $('grandTotal').textContent=money(items.reduce((s,x)=>s+x.price,0));
+    saveState();
+  }
+
+  async function copyText(text,button){
+    const old=button.textContent;
+    try{
+      await navigator.clipboard.writeText(text);
+      button.textContent='Copied';
+    }catch(e){
+      const ta=document.createElement('textarea');
+      ta.value=text; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove();
+      button.textContent='Copied';
+    }
+    setTimeout(()=>button.textContent=old,1200);
+  }
+
+  $('addItem').addEventListener('click',()=>{
+    const hrs=Number($('hours').value);
+    if(!Number.isFinite(hrs)||hrs<=0){$('status').textContent='Enter the estimated hours.';return;}
+    const desc=buildDescription();
+    const price=round5(hrs*currentRate());
+    items.push({type:selectedType,hours:hrs,price,description:desc});
+    $('status').textContent='Line item added.';
+    $('hours').value=''; $('treeLocation').value=''; $('notes').value='';
+    render();
+  });
+
+  function calcCrane(){
+    const picks=Number($('cranePicks').value)||0;
+    const per=Number($('craneTimePerPick').value)||0;
+    const travel=Number($('craneTravel').value)||0;
+    const rate=Number($('craneRate').value)||0;
+    const h=picks*per+travel;
+    $('craneHours').textContent=h.toFixed(2).replace(/\.00$/,'')+' hr';
+    const cost=round5(h*rate);
+    $('craneCost').textContent=money(cost);
+    return {h,cost,picks,per,travel,rate};
+  }
+  ['cranePicks','craneTimePerPick','craneTravel','craneRate'].forEach(id=>$(id).addEventListener('input',calcCrane));
+
+  $('addCrane').addEventListener('click',()=>{
+    const c=calcCrane();
+    if(c.h<=0) return;
+    const description=`Crane service for tree work.\nIncludes ${c.picks} crane pick${c.picks===1?'':'s'}${c.travel>0?` and ${c.travel} hour${c.travel===1?'':'s'} of crane travel time`:''}.`;
+    items.push({type:'Crane',hours:c.h,price:c.cost,description});
+    render();
+  });
+
+  let clearArmed=false;
+  let clearTimer=null;
+  $('clearAll').addEventListener('click',()=>{
+    if(!clearArmed){
+      clearArmed=true;
+      $('clearAll').textContent='Tap again to confirm';
+      if(clearTimer) clearTimeout(clearTimer);
+      clearTimer=setTimeout(()=>{
+        clearArmed=false;
+        $('clearAll').textContent='Clear all';
+      },4000);
+      return;
+    }
+    if(clearTimer) clearTimeout(clearTimer);
+    clearArmed=false;
+    $('clearAll').textContent='Clear all';
+    items=[];
+    render();
+    saveCurrentJob(true);
+  });
+
+  const JOBBER_BACKEND_BASE = 'https://tree-meister-jobber-bridge.onrender.com';
+
+  async function jobberFetch(path, options={}){
+    const r = await fetch(JOBBER_BACKEND_BASE.replace(/\/$/,'') + path, {
+      credentials:'include',
+      headers:{'Content-Type':'application/json', ...(options.headers||{})},
+      ...options
+    });
+    if(!r.ok){
+      let msg='Jobber request failed.';
+      try{ const j=await r.json(); msg=j.error||j.message||msg; }catch(e){}
+      throw new Error(msg);
+    }
+    return r.json();
+  }
+
+  async function refreshJobberStatus(){
+    try{
+      const s=await jobberFetch('/api/jobber/status');
+      if(s.connected){
+        $('jobberStatus').textContent='Connected';
+        $('jobberClient').disabled=false;
+        $('jobberProperty').disabled=false;
+        $('sendJobber').disabled=false;
+      }else{
+        $('jobberStatus').textContent='Not connected';
+      }
+    }catch(e){}
+  }
+
+  if($('connectJobber')) $('connectJobber').addEventListener('click', async ()=>{
+    const msg=$('jobberMessage');
+    try{
+      const {url}=await jobberFetch('/api/jobber/connect');
+      window.location.href=url;
+    }catch(e){ msg.textContent=e.message; }
+  });
+
+  if($('sendJobber')) $('sendJobber').addEventListener('click', async ()=>{
+    const msg=$('jobberMessage');
+    if(!items.length){ msg.textContent='Add at least one line item first.'; return; }
+    msg.textContent='Creating draft quote...';
+    try{
+      const payload={
+        title:($('jobName').value||'').trim(),
+        clientId:($('jobberClient').dataset.clientId||'').trim(),
+        propertyId:($('jobberProperty').dataset.propertyId||'').trim(),
+        lineItems:items.map(it=>({name:it.type,description:it.description,quantity:1,unitPrice:it.price}))
+      };
+      const out=await jobberFetch('/api/jobber/quotes',{method:'POST',body:JSON.stringify(payload)});
+      msg.textContent=out.message||'Draft quote created in Jobber.';
+    }catch(e){ msg.textContent=e.message; }
+  });
+
+  loadJobs();
+  refreshJobSelect();
+  refreshJobberStatus();
+
+  $('newJob').addEventListener('click',()=>{
+    createNewJob('', true);
+    $('jobName').focus();
+    $('jobName').select();
+  });
+
+  $('saveJob').addEventListener('click',()=>saveCurrentJob(false));
+
+  $('jobSelect').addEventListener('change',()=>{
+    const selectedJobId = $('jobSelect').value;
+    if(selectedJobId === currentJobId) return;
+    saveCurrentJob(true);
+    loadJob(selectedJobId);
+  });
+
+  $('jobName').addEventListener('input',()=>{ saveCurrentJob(true); });
+
+  let deleteArmed=false;
+  let deleteTimer=null;
+  $('deleteJob').addEventListener('click',()=>{
+    if(!deleteArmed){
+      deleteArmed=true;
+      $('deleteJob').textContent='Tap again to delete job';
+      if(deleteTimer) clearTimeout(deleteTimer);
+      deleteTimer=setTimeout(()=>{
+        deleteArmed=false;
+        $('deleteJob').textContent='Delete current job';
+      },4000);
+      return;
+    }
+    if(deleteTimer) clearTimeout(deleteTimer);
+    deleteArmed=false;
+    $('deleteJob').textContent='Delete current job';
+    deleteCurrentJob();
+  });
+
+  document.querySelectorAll('input, select, textarea').forEach(el=>{
+    if(['jobSelect','jobberClient','jobberProperty'].includes(el.id)) return;
+    el.addEventListener('input', saveState);
+    el.addEventListener('change', saveState);
+  });
+})();
+</script>
+</body>
+</html>
