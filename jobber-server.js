@@ -180,14 +180,13 @@ app.get('/api/jobber/clients/:clientId/requests', async (req,res)=>{
     let after=null;
     for(let page=0;page<15;page++){
       const data=await jobberGraphQL(
-        'query Requests($first:Int!,$after:String){ requests(first:$first,after:$after){ nodes{ id title status client{ id } property{ id } } pageInfo{ hasNextPage endCursor } } }',
+        'query Requests($first:Int!,$after:String){ requests(first:$first,after:$after){ nodes{ id title client{ id } property{ id } } pageInfo{ hasNextPage endCursor } } }',
         {first:50,after}
       );
       const connection=data.requests;
       for(const r of connection?.nodes||[]){
-        const status=String(r.status||'').replace(/[_-]/g,' ').toLowerCase();
-        if(r.client?.id===clientId && status.includes('assessment') && status.includes('completed')){
-          matches.push({id:r.id,title:r.title||'Completed assessment',propertyId:r.property?.id||''});
+        if(r.client?.id===clientId){
+          matches.push({id:r.id,title:r.title||'Existing request',propertyId:r.property?.id||''});
         }
       }
       if(!connection?.pageInfo?.hasNextPage||!connection.pageInfo.endCursor)break;
