@@ -217,6 +217,29 @@ details summary{cursor:pointer;font-weight:800}
   <div class="card">
     <div class="space">
       <div>
+        <div class="section-title">Quote line items</div>
+        <div class="muted">Use the Copy Description button for Jobber.</div>
+      </div>
+      <button id="clearAll" class="small danger">Clear all</button>
+    </div>
+    <div id="items"><div class="muted" style="padding:12px 0">No line items yet.</div></div>
+  </div>
+
+  <div class="card">
+    <div class="space">
+      <div>
+        <div class="muted">Total estimated crew time</div>
+        <strong id="totalHours">0 hr</strong>
+      </div>
+      <div style="text-align:right">
+        <div class="muted">Quote total</div>
+        <div id="grandTotal" class="total">$0.00</div>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="space">
+      <div>
         <div class="section-title">Jobber</div>
         <div class="muted">Create a draft Jobber quote from this saved job. Nothing is sent to the customer automatically.</div>
       </div>
@@ -250,29 +273,6 @@ details summary{cursor:pointer;font-weight:800}
     </div>
   </div>
 
-  <div class="card">
-    <div class="space">
-      <div>
-        <div class="section-title">Quote line items</div>
-        <div class="muted">Use the Copy Description button for Jobber.</div>
-      </div>
-      <button id="clearAll" class="small danger">Clear all</button>
-    </div>
-    <div id="items"><div class="muted" style="padding:12px 0">No line items yet.</div></div>
-  </div>
-
-  <div class="card">
-    <div class="space">
-      <div>
-        <div class="muted">Total estimated crew time</div>
-        <strong id="totalHours">0 hr</strong>
-      </div>
-      <div style="text-align:right">
-        <div class="muted">Quote total</div>
-        <div id="grandTotal" class="total">$0.00</div>
-      </div>
-    </div>
-  </div>
 </div>
 
 <script>
