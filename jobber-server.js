@@ -98,6 +98,25 @@ app.get('/api/jobber/callback', async (req,res)=>{
   }catch(e){ res.status(500).send('Jobber connection failed: '+e.message); }
 });
 
+app.get('/api/jobber/recent-clients', async (req,res)=>{
+  try{
+    const clients=[];
+    let after=null;
+    for(let page=0;page<20;page++){
+      const data=await jobberGraphQL(
+        'query RecentClients($first:Int!,$after:String){ clients(first:$first,after:$after){ nodes{ id name createdAt } pageInfo{ hasNextPage endCursor } } }',
+        {first:50,after}
+      );
+      const connection=data.clients;
+      clients.push(...(connection?.nodes||[]));
+      if(!connection?.pageInfo?.hasNextPage||!connection.pageInfo.endCursor)break;
+      after=connection.pageInfo.endCursor;
+    }
+    clients.sort((a,b)=>String(b.createdAt||'').localeCompare(String(a.createdAt||'')));
+    res.json({clients:clients.slice(0,25)});
+  }catch(e){res.status(500).json({error:e.message});}
+});
+
 app.get('/api/jobber/clients', async (req,res)=>{
   try{
     const q = String(req.query.q||'').trim();
