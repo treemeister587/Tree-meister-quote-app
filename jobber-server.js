@@ -173,6 +173,21 @@ app.get('/api/jobber/clients/:clientId/properties', async (req,res)=>{
   }catch(e){res.status(500).json({error:e.message});}
 });
 
+app.get('/api/jobber/requests/recent', async (req,res)=>{
+  try{
+    const requests=[];
+    let after=null;
+    for(let page=0;page<4;page++){
+      const data=await jobberGraphQL('query RecentRequests($first:Int!,$after:String){ requests(first:$first,after:$after){ nodes{ id title client{ id name } property{ id } } pageInfo{ hasNextPage endCursor } } }',{first:50,after});
+      const conn=data.requests;
+      for(const r of conn?.nodes||[]){if(r.client?.id)requests.push({id:r.id,title:r.title||'Request',clientId:r.client.id,clientName:r.client.name||'Unnamed client',propertyId:r.property?.id||''});}
+      if(!conn?.pageInfo?.hasNextPage||!conn.pageInfo.endCursor)break;
+      after=conn.pageInfo.endCursor;
+    }
+    res.json({requests});
+  }catch(e){res.status(500).json({error:e.message});}
+});
+
 app.get('/api/jobber/clients/:clientId/requests', async (req,res)=>{
   try{
     const clientId=String(req.params.clientId||'');
