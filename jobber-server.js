@@ -145,7 +145,7 @@ app.get('/api/jobber/clients/:clientId/properties', async (req,res)=>{
 
 app.post('/api/jobber/quotes', async (req,res)=>{
   try{
-    const {clientId, propertyId, lineItems, title} = req.body || {};
+    const {clientId, propertyId, lineItems, title, requestId} = req.body || {};
     if(!clientId) return res.status(400).json({error:'Select a Jobber client first.'});
     if(!propertyId) return res.status(400).json({error:'Select a Jobber property first.'});
     if(!Array.isArray(lineItems) || !lineItems.length) return res.status(400).json({error:'Add at least one quote line item first.'});
@@ -162,6 +162,12 @@ app.post('/api/jobber/quotes', async (req,res)=>{
       : firstType === 'crane' ? 'Crane Service'
       : 'Tree Service Estimate';
     input.title = automaticTitle;
+    if(requestId){
+      const schema = await jobberGraphQL('{ __type(name: "QuoteCreateAttributes") { inputFields { name } } }');
+      const fields = (schema.__type?.inputFields || []).map(f=>f.name);
+      if(!fields.includes('requestId')) return res.status(409).json({error:'Jobber does not expose request association on quoteCreate in this API version. No duplicate quote was created.'});
+      input.requestId = String(requestId);
+    }
     const mutation = `mutation CreateQuote($attributes:QuoteCreateAttributes!){ quoteCreate(attributes:$attributes){ quote{ id quoteNumber } userErrors{ message path } } }`;
     const data = await jobberGraphQL(mutation, {attributes:input});
     const result = data.quoteCreate;
