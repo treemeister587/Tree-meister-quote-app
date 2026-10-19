@@ -142,6 +142,7 @@ details summary{cursor:pointer;font-weight:800}
         <div class="check"><input id="raiseCanopy" type="checkbox"><span>Raise canopy to:</span></div>
         <div><input id="canopyHeight" type="text" placeholder="e.g. 8’"></div>
       </div>
+      <div class="check"><input id="roundCanopy" type="checkbox"><span>Rounding the canopy.</span></div>
       <div class="check"><input id="suckers" type="checkbox"><span>Removing the lower suckers.</span></div>
       <div class="check"><input id="marked" type="checkbox"><span>Removing the marked limbs.</span></div>
       <div class="grid">
@@ -443,8 +444,8 @@ details summary{cursor:pointer;font-weight:800}
   }
   function debrisWording(value, trimming=false){
     if(value==='leaveAll') return 'Leaving all brush and logs where they land.';
-    if(value==='leaveLogs') return 'Leaving the logs cut into 2–10’ lengths in a pile.';
-    if(value==='leaveRounds') return 'Leaving the logs cut into approximately 16” rounds in a pile. Please note: this option will produce a large amount of sawdust that we will be unable to fully clean up.';
+    if(value==='leaveLogs') return 'Leaving the logs cut into 2–10’ lengths in a pile. Includes hauling away the brush.';
+    if(value==='leaveRounds') return 'Leaving the logs cut into approximately 16” rounds in a pile. Includes hauling away the brush. Please note: this option will produce a large amount of sawdust that we will be unable to fully clean up.';
     return trimming ? 'Includes removal of all debris resulting from the trimming process.' : 'Includes removing all brush and logs.';
   }
 
@@ -472,12 +473,13 @@ details summary{cursor:pointer;font-weight:800}
       t=`Removing ${lowerLead(tl) || 'the tree'}.\n${debrisWording($('removalDebris').value,false)}\nLeaving the stump(s) cut ${h} inch${h===1?'':'es'} above the ground.`;
     }
     if(selectedType==='Trim'){
-      t=`Trimming ${tl || 'the tree'}.`;
+      t=`Trimming ${lowerLead(tl) || 'the tree'}.`;
       const bullets=[];
       if($('dead2').checked) bullets.push('Removing all deadwood 2” in diameter or larger.');
       if($('deadAll').checked) bullets.push('Removing all deadwood.');
       if($('lowerDeadwood')?.checked) bullets.push('Removing the lower deadwood up to 15’.');
       if($('raiseCanopy').checked) bullets.push(`Raising the canopy to ${cleanText($('canopyHeight').value) || '____'}.`);
+      if($('roundCanopy').checked) bullets.push('Rounding the canopy.');
       if($('suckers').checked) bullets.push('Removing the lower suckers.');
       if($('marked').checked) bullets.push('Removing the marked limbs.');
       if($('houseClear').checked) bullets.push(`Providing ${cleanText($('houseDistance').value) || '____'} of clearance around the house.`);
