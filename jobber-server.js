@@ -154,7 +154,14 @@ app.post('/api/jobber/quotes', async (req,res)=>{
       lineItems: lineItems.map(x=>({name:x.name||'Tree work', description:x.description||'', quantity:Number(x.quantity||1), unitPrice:Number(x.unitPrice||0), saveToProductsAndServices:false}))
     };
     input.propertyId = propertyId;
-    input.title = typeof title === 'string' && title.trim() ? title.trim() : 'Tree Service Estimate';
+    const firstType = String(lineItems[0]?.name || '').trim().toLowerCase();
+    const automaticTitle = firstType === 'removal' ? 'Tree Removal'
+      : firstType === 'trim' || firstType === 'trimming' ? 'Tree Trimming'
+      : firstType === 'stump' ? 'Stump Grinding'
+      : firstType === 'cable' || firstType === 'cabling' ? 'Tree Cabling'
+      : firstType === 'crane' ? 'Crane Service'
+      : 'Tree Service Estimate';
+    input.title = automaticTitle;
     const mutation = `mutation CreateQuote($attributes:QuoteCreateAttributes!){ quoteCreate(attributes:$attributes){ quote{ id quoteNumber } userErrors{ message path } } }`;
     const data = await jobberGraphQL(mutation, {attributes:input});
     const result = data.quoteCreate;
