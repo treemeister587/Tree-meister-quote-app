@@ -576,6 +576,11 @@ details summary{cursor:pointer;font-weight:800}
     items.push({type:selectedType,hours:hrs+(crane?.h||0),price,description:desc,internalNote});
     $('status').textContent='Line item added.';
     $('hours').value=''; $('treeLocation').value=''; $('notes').value='';
+    if(selectedType==='Removal'){
+      $('cranePicks').value='0';
+      $('craneTravel').value='0';
+      calcCrane();
+    }
     render();
   });
 
