@@ -226,6 +226,7 @@ details summary{cursor:pointer;font-weight:800}
       <div>
         <label>Client</label>
         <input id="jobberClient" type="text" placeholder="Type a client name to search Jobber" autocomplete="off" disabled>
+        <button id="recentJobberClients" class="small" type="button" style="margin-top:7px">Show recent clients</button>
         <select id="jobberClientResults" class="hidden" size="5" aria-label="Matching Jobber clients" style="margin-top:6px"></select>
         <div class="rate-note" id="jobberClientSelected">Search and select a matching client before creating a quote.</div>
       </div>
@@ -689,6 +690,19 @@ details summary{cursor:pointer;font-weight:800}
         clientSelected.textContent = 'Client search failed: ' + e.message;
       }
     },300);
+  });
+  $('recentJobberClients').addEventListener('click',async ()=>{
+    const seq=++clientSearchSequence;
+    clearTimeout(clientSearchTimeout);
+    clientSelected.textContent='Loading recent clients...';
+    try{
+      const {clients}=await jobberFetch('/api/jobber/recent-clients');
+      if(seq!==clientSearchSequence)return;
+      clientResults.replaceChildren(new Option('Choose a recent client',''));
+      (clients||[]).forEach(c=>clientResults.add(new Option(c.name||'(Unnamed client)',c.id)));
+      clientResults.classList.remove('hidden');
+      clientSelected.textContent=clients?.length?'Select a recent client from the list.':'No recent clients found.';
+    }catch(e){clientSelected.textContent='Unable to load recent clients: '+e.message;}
   });
   clientResults.addEventListener('change',async ()=>{
     const option=clientResults.selectedOptions[0];
