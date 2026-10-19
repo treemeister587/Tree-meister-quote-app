@@ -769,7 +769,7 @@ details summary{cursor:pointer;font-weight:800}
         clientId:($('jobberClient').dataset.clientId||'').trim(),
         propertyId:$('jobberProperty').value,
         requestId:$('jobberRequest').value || undefined,
-        lineItems:items.map(it=>({name:it.type,description:it.description,quantity:1,unitPrice:it.price}))
+        lineItems:items.map(it=>({name:({Removal:'Tree Removal',Trim:'Tree Trimming',Cable:'Cabling',Stump:'Stump Grinding'})[it.type]||it.type,description:it.description,quantity:1,unitPrice:it.price}))
       };
       const out=await jobberFetch('/api/jobber/quotes',{method:'POST',body:JSON.stringify(payload)});
       msg.textContent=out.message||'Draft quote created in Jobber.';
