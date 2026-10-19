@@ -257,10 +257,10 @@ app.post('/api/jobber/quotes', async (req,res)=>{
     };
     input.propertyId = propertyId;
     const firstType = String(lineItems[0]?.name || '').trim().toLowerCase();
-    const automaticTitle = firstType === 'removal' ? 'Tree Removal'
-      : firstType === 'trim' || firstType === 'trimming' ? 'Tree Trimming'
-      : firstType === 'stump' ? 'Stump Grinding'
-      : firstType === 'cable' || firstType === 'cabling' ? 'Tree Cabling'
+    const automaticTitle = ['removal','tree removal'].includes(firstType) ? 'Tree Removal'
+      : ['trim','trimming','tree trimming'].includes(firstType) ? 'Tree Trimming'
+      : ['stump','stump grinding'].includes(firstType) ? 'Stump Grinding'
+      : ['cable','cabling','tree cabling'].includes(firstType) ? 'Cabling'
       : firstType === 'crane' ? 'Crane Service'
       : 'Tree Service Estimate';
     input.title = automaticTitle;
