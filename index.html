@@ -225,11 +225,13 @@ details summary{cursor:pointer;font-weight:800}
     <div class="grid" style="margin-top:12px">
       <div>
         <label>Client</label>
-        <input id="jobberClient" type="text" placeholder="Search/select client after connection" disabled>
+        <input id="jobberClient" type="text" placeholder="Type a client name to search Jobber" autocomplete="off" disabled>
+        <select id="jobberClientResults" class="hidden" size="5" aria-label="Matching Jobber clients" style="margin-top:6px"></select>
+        <div class="rate-note" id="jobberClientSelected">Search and select a matching client before creating a quote.</div>
       </div>
       <div>
         <label>Property</label>
-        <input id="jobberProperty" type="text" placeholder="Select property after connection" disabled>
+        <input id="jobberProperty" type="text" placeholder="Property selection not available yet (optional)" disabled>
       </div>
     </div>
     <div class="row" style="margin-top:12px">
@@ -623,13 +625,74 @@ details summary{cursor:pointer;font-weight:800}
       if(s.connected){
         $('jobberStatus').textContent='Connected';
         $('jobberClient').disabled=false;
-        $('jobberProperty').disabled=false;
+        // Property selection is not implemented; propertyId is optional.
         $('sendJobber').disabled=false;
       }else{
         $('jobberStatus').textContent='Not connected';
+        $('sendJobber').disabled=true;
+        $('jobberClient').disabled=true;
       }
-    }catch(e){}
+    }catch(e){ $('jobberStatus').textContent='Connection unavailable'; }
   }
+
+  // A typed name is not a Jobber client ID. Select a result to associate the record.
+  let clientSearchSequence = 0;
+  let clientSearchTimeout;
+  const clientInput = $('jobberClient');
+  const clientResults = $('jobberClientResults');
+  const clientSelected = $('jobberClientSelected');
+  clientInput.addEventListener('input', ()=>{
+    clientInput.dataset.clientId = '';
+    clientSelected.textContent = 'Select a matching client from the list.';
+    const q = clientInput.value.trim();
+    clientResults.classList.add('hidden');
+    clientResults.replaceChildren();
+    const seq = ++clientSearchSequence;
+    clearTimeout(clientSearchTimeout);
+    if(q.length < 2){
+      clientSelected.textContent = 'Enter at least 2 letters to search Jobber clients.';
+      return;
+    }
+    clientSearchTimeout = setTimeout(async ()=>{
+      clientSelected.textContent = 'Searching Jobber clients...';
+      try {
+        const {clients} = await jobberFetch('/api/jobber/clients?q=' + encodeURIComponent(q));
+        if(seq !== clientSearchSequence) return;
+        clientResults.replaceChildren();
+        if(!clients?.length){
+          clientSelected.textContent = 'No matching client found. Try a different name.';
+          return;
+        }
+        const hint=document.createElement('option');
+        hint.textContent='Choose a client below';
+        hint.value='';
+        hint.disabled=true;
+        hint.selected=true;
+        clientResults.appendChild(hint);
+        clients.forEach(c=>{
+          const option=document.createElement('option');
+          option.value=c.id;
+          option.textContent=c.name || '(Unnamed client)';
+          clientResults.appendChild(option);
+        });
+        clientResults.classList.remove('hidden');
+        clientSelected.textContent = 'Tap a client name from the list to select it.';
+      }catch(e){
+        if(seq !== clientSearchSequence) return;
+        clientSelected.textContent = 'Client search failed: ' + e.message;
+      }
+    },300);
+  });
+  clientResults.addEventListener('change',()=>{
+    const option=clientResults.selectedOptions[0];
+    if(!option?.value) return;
+    ++clientSearchSequence;
+    clearTimeout(clientSearchTimeout);
+    clientInput.dataset.clientId=option.value;
+    clientInput.value=option.textContent;
+    clientSelected.textContent='Selected Jobber client: '+option.textContent;
+    clientResults.classList.add('hidden');
+  });
 
   if($('connectJobber')) $('connectJobber').addEventListener('click', async ()=>{
     const msg=$('jobberMessage');
@@ -642,6 +705,7 @@ details summary{cursor:pointer;font-weight:800}
   if($('sendJobber')) $('sendJobber').addEventListener('click', async ()=>{
     const msg=$('jobberMessage');
     if(!items.length){ msg.textContent='Add at least one line item first.'; return; }
+    if(!clientInput.dataset.clientId){ msg.textContent='Search for and select a Jobber client from the results first.'; return; }
     msg.textContent='Creating draft quote...';
     try{
       const payload={
