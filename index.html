@@ -49,6 +49,7 @@ button.danger{color:var(--danger)}
 details summary{cursor:pointer;font-weight:800}
 .section-title{font-weight:800;margin-bottom:10px}
 .pill{display:inline-block;background:var(--accent2);color:var(--accent);border-radius:999px;padding:4px 8px;font-size:12px;font-weight:700}
+.trimGroup{margin:16px 0 10px}.trimGroup strong{display:block;margin-bottom:9px}.trimGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.trimChoice{display:flex;gap:8px;align-items:center;padding:12px 9px;border:1px solid var(--border);border-radius:10px;color:var(--text);margin:0;font-size:14px;min-height:52px}.trimChoice:has(input:checked){background:var(--accent2);border-color:var(--accent);font-weight:700}.trimChoice input{width:auto;accent-color:var(--accent)}.trimMeasure{display:none;margin:8px 0 14px;padding:12px;border-radius:10px;background:var(--accent2)}.trimMeasure.visible{display:block}.presetRow{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-bottom:8px}.presetBtn{padding:8px 4px;min-height:38px}.presetBtn.active{background:var(--accent);color:white;border-color:var(--accent)}.trimPreview{padding:12px;background:var(--accent2);border-radius:10px;margin-top:16px}.trimPreview .desc{margin-bottom:0}@media(max-width:400px){.trimGrid{grid-template-columns:1fr 1fr}}
 </style>
 </head>
 <body>
@@ -158,36 +159,18 @@ details summary{cursor:pointer;font-weight:800}
     </div>
 
     <div id="trimOptions" class="hidden" style="margin-top:12px">
-      <div class="check"><input id="dead2" type="checkbox"><span>Removing any deadwood 2” or bigger. <span class="muted"></span></span></div>
-      <div class="check"><input id="deadAll" type="checkbox"><span>Removing any deadwood.</span></div>
-      <div class="check"><input id="lowerDeadwood" type="checkbox"><span>Lower deadwood up to 15’.</span></div>
-      <div class="grid">
-        <div class="check"><input id="raiseCanopy" type="checkbox"><span>Raise canopy to:</span></div>
-        <div><input id="canopyHeight" type="text" placeholder="e.g. 8’"></div>
-      </div>
-      <div class="check"><input id="roundCanopy" type="checkbox"><span>Rounding the canopy.</span></div>
-      <div class="check"><input id="suckers" type="checkbox"><span>Removing the lower suckers.</span></div>
-      <div class="check"><input id="marked" type="checkbox"><span>Removing the marked limbs.</span></div>
-      <div class="grid">
-        <div class="check"><input id="houseClear" type="checkbox"><span>House clearance by:</span></div>
-        <div><input id="houseDistance" type="text" placeholder="e.g. 4’"></div>
-      </div>
-      <div class="grid">
-        <div class="check"><input id="otherTreeClear" type="checkbox"><span>Trim around the other tree by:</span></div>
-        <div><input id="otherTreeDistance" type="text" placeholder="e.g. 4’"></div>
-      </div>
-      <div class="check"><input id="video" type="checkbox" checked><span>Video will show more detail.</span></div>
-      <label>Brush & log handling</label>
-      <select id="trimDebris">
-        <option value="haul">Haul all trimming debris</option>
-        <option value="leaveAll">Leave all</option>
-        <option value="leaveLogs">Leaving logs</option>
-        <option value="leaveRounds">Leaving rounds</option>
-      </select>
-      <div style="height:10px"></div>
-      <label>Other trimming detail</label>
-      <input id="trimOther" type="text" placeholder="Optional extra trimming instruction">
-    </div>
+<div class="trimGroup"><strong>Deadwood removal</strong><div class="trimGrid"><label class="trimChoice"><input id="dead2" type="checkbox"><span>Deadwood 2”+</span></label><label class="trimChoice"><input id="deadAll" type="checkbox"><span>All deadwood</span></label><label class="trimChoice"><input id="lowerDeadwood" type="checkbox"><span>Lower deadwood to 15′</span></label></div></div>
+<div class="trimGroup"><strong>Canopy shaping</strong><div class="trimGrid"><label class="trimChoice"><input id="raiseCanopy" type="checkbox"><span>Raise canopy</span></label><label class="trimChoice"><input id="roundCanopy" type="checkbox"><span>Round canopy</span></label><label class="trimChoice"><input id="suckers" type="checkbox"><span>Remove lower suckers</span></label></div></div>
+<div class="trimMeasure" data-toggle="raiseCanopy"><label>Raise canopy to</label><div class="presetRow"><button type="button" class="presetBtn" data-target="canopyHeight" data-value="5’">5′</button><button type="button" class="presetBtn" data-target="canopyHeight" data-value="6’">6′</button><button type="button" class="presetBtn" data-target="canopyHeight" data-value="7’">7′</button><button type="button" class="presetBtn" data-target="canopyHeight" data-value="8’">8′</button><button type="button" class="presetBtn" data-target="canopyHeight" data-value="10’">10′</button><button type="button" class="presetBtn" data-target="canopyHeight" data-value="12’">12′</button><button type="button" class="presetBtn" data-target="canopyHeight" data-value="15’">15′</button></div><input id="canopyHeight" type="text" placeholder="Custom measurement" aria-label="Raise canopy to"></div>
+<div class="trimGroup"><strong>Clearance trimming</strong><div class="trimGrid"><label class="trimChoice"><input id="houseClear" type="checkbox"><span>House clearance</span></label><label class="trimChoice"><input id="otherTreeClear" type="checkbox"><span>Clearance around another tree</span></label></div></div>
+<div class="trimMeasure" data-toggle="houseClear"><label>House clearance</label><div class="presetRow"><button type="button" class="presetBtn" data-target="houseDistance" data-value="5’">5′</button><button type="button" class="presetBtn" data-target="houseDistance" data-value="6’">6′</button><button type="button" class="presetBtn" data-target="houseDistance" data-value="7’">7′</button><button type="button" class="presetBtn" data-target="houseDistance" data-value="8’">8′</button><button type="button" class="presetBtn" data-target="houseDistance" data-value="10’">10′</button><button type="button" class="presetBtn" data-target="houseDistance" data-value="12’">12′</button><button type="button" class="presetBtn" data-target="houseDistance" data-value="15’">15′</button></div><input id="houseDistance" type="text" placeholder="Custom measurement" aria-label="House clearance"></div>
+<div class="trimMeasure" data-toggle="otherTreeClear"><label>Clearance around other trees</label><div class="presetRow"><button type="button" class="presetBtn" data-target="otherTreeDistance" data-value="3’">3′</button><button type="button" class="presetBtn" data-target="otherTreeDistance" data-value="4’">4′</button><button type="button" class="presetBtn" data-target="otherTreeDistance" data-value="5’">5′</button><button type="button" class="presetBtn" data-target="otherTreeDistance" data-value="6’">6′</button><button type="button" class="presetBtn" data-target="otherTreeDistance" data-value="7’">7′</button><button type="button" class="presetBtn" data-target="otherTreeDistance" data-value="8’">8′</button><button type="button" class="presetBtn" data-target="otherTreeDistance" data-value="10’">10′</button><button type="button" class="presetBtn" data-target="otherTreeDistance" data-value="12’">12′</button></div><input id="otherTreeDistance" type="text" placeholder="Custom measurement" aria-label="Clearance around other trees"></div>
+<div class="trimGroup"><strong>Specific trimming</strong><div class="trimGrid"><label class="trimChoice"><input id="marked" type="checkbox"><span>Remove marked limbs</span></label></div></div>
+<div class="check"><input id="video" type="checkbox" checked><span>Video will show more detail.</span></div>
+<label>Brush & log handling</label><select id="trimDebris"><option value="haul">Haul all trimming debris</option><option value="leaveAll">Leave all</option><option value="leaveLogs">Leaving logs</option><option value="leaveRounds">Leaving rounds</option></select>
+<div style="height:10px"></div><label>Other trimming detail</label><input id="trimOther" type="text" placeholder="Optional extra trimming instruction">
+<div class="trimPreview"><strong>Finished description preview</strong><div id="trimPreviewText" class="desc"></div></div>
+</div>
 
     <div id="stumpOptions" class="hidden" style="margin-top:12px">
       <label>Mulch handling</label>
@@ -317,6 +300,7 @@ details summary{cursor:pointer;font-weight:800}
     if($('trimDebris')) $('trimDebris').value = 'haul';
     selectedType = 'Removal';
     showType('Removal');
+    updateTrimUI();
   }
 
   function persistAll(){
@@ -399,6 +383,7 @@ details summary{cursor:pointer;font-weight:800}
     applyFields(job.fields || {});
     if($('jobName')) $('jobName').value=job.name || '';
     showType(selectedType);
+    updateTrimUI();
     refreshJobSelect();
     calcCrane();
     render();
@@ -470,6 +455,7 @@ details summary{cursor:pointer;font-weight:800}
     $('trimOptions').classList.toggle('hidden',type!=='Trim');
     $('stumpOptions').classList.toggle('hidden',type!=='Stump');
     $('cableOptions').classList.toggle('hidden',type!=='Cable');
+    updateTrimUI();
     $('treeLocation').placeholder = type==='Stump' ? 'e.g. apple stump near the garage' :
       type==='Cable' ? 'e.g. Sugar maple in the backyard' :
       type==='Removal' ? 'e.g. uprooted apple near the garage' :
@@ -518,6 +504,28 @@ details summary{cursor:pointer;font-weight:800}
     return grammarCorrect(t);
   }
 
+  function updateTrimUI(){
+    document.querySelectorAll('.trimMeasure').forEach(panel=>{
+      panel.classList.toggle('visible',!!$(panel.dataset.toggle)?.checked);
+    });
+    document.querySelectorAll('.presetBtn').forEach(button=>{
+      button.classList.toggle('active',$(button.dataset.target)?.value===button.dataset.value);
+    });
+    if($('trimPreviewText')) $('trimPreviewText').textContent=buildDescriptionForPreview();
+  }
+  function buildDescriptionForPreview(){
+    if(selectedType!=='Trim')return '';
+    return buildDescription();
+  }
+  document.querySelectorAll('.presetBtn').forEach(button=>button.addEventListener('click',()=>{
+    $(button.dataset.target).value=button.dataset.value;
+    updateTrimUI();
+    saveState();
+  }));
+  document.querySelectorAll('#trimOptions input,#trimOptions select').forEach(el=>{
+    el.addEventListener('input',updateTrimUI);
+    el.addEventListener('change',updateTrimUI);
+  });
   function render(){
     const box=$('items');
     if(!items.length){box.innerHTML='<div class="muted" style="padding:12px 0">No line items yet.</div>';}
