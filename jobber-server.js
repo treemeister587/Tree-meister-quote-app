@@ -226,9 +226,28 @@ app.get('/api/jobber/clients/:clientId/requests', async (req,res)=>{
   }catch(e){res.status(500).json({error:e.message});}
 });
 
+async function attachInternalQuoteNote(quoteId, noteText){
+  // Inspect the connected Jobber schema before writing: API note shapes vary by version.
+  const schema=await jobberGraphQL('{ __schema { mutationType { fields { name args { name type { kind name ofType { kind name } } } } } } }');
+  const mutation=(schema.__schema?.mutationType?.fields||[]).find(f=>f.name==='noteCreate');
+  if(!mutation) throw new Error('Jobber noteCreate mutation is unavailable.');
+  const arg=mutation.args?.find(a=>['attributes','input'].includes(a.name));
+  const inputType=arg?.type?.name||arg?.type?.ofType?.name;
+  if(!inputType) throw new Error('Jobber note creation input could not be identified.');
+  const detail=await jobberGraphQL('{ __type(name:"'+inputType+'"){ inputFields { name type { kind name ofType { kind name } } } } }');
+  const fields=(detail.__type?.inputFields||[]).map(x=>x.name);
+  const contentKey=['message','content','text','body'].find(k=>fields.includes(k));
+  const recordKey=['quoteId','linkedQuoteId'].find(k=>fields.includes(k));
+  if(!contentKey || !recordKey) throw new Error('Jobber does not expose a verified quote-note attachment format.');
+  const attributes={[contentKey]:noteText,[recordKey]:quoteId};
+  const query='mutation AddQuoteNote($attrs:'+inputType+'!){ noteCreate('+arg.name+':$attrs){ userErrors{ message } } }';
+  const data=await jobberGraphQL(query,{attrs:attributes});
+  if(data.noteCreate?.userErrors?.length)throw new Error(data.noteCreate.userErrors.map(e=>e.message).join('; '));
+}
+
 app.post('/api/jobber/quotes', async (req,res)=>{
   try{
-    const {clientId, propertyId, lineItems, title, requestId} = req.body || {};
+    const {clientId, propertyId, lineItems, title, requestId, internalNotes} = req.body || {};
     if(!clientId) return res.status(400).json({error:'Select a Jobber client first.'});
     if(!propertyId) return res.status(400).json({error:'Select a Jobber property first.'});
     if(!Array.isArray(lineItems) || !lineItems.length) return res.status(400).json({error:'Add at least one quote line item first.'});
@@ -255,7 +274,15 @@ app.post('/api/jobber/quotes', async (req,res)=>{
     const data = await jobberGraphQL(mutation, {attributes:input});
     const result = data.quoteCreate;
     if(result?.userErrors?.length) throw new Error(result.userErrors.map(e=>e.message).join('; '));
-    res.json({ok:true, quote:result.quote, message:'Draft quote created in Jobber.'});
+    let internalNoteWarning='';
+    if(String(internalNotes||'').trim()){
+      try{
+        await attachInternalQuoteNote(result.quote.id,String(internalNotes).trim());
+      }catch(err){
+        internalNoteWarning='The draft quote was created, but crane notes were not attached. Use Copy crane notes to paste them into Jobber internal notes. ('+err.message+')';
+      }
+    }
+    res.json({ok:true, quote:result.quote, message:'Draft quote created in Jobber.', internalNoteWarning});
   }catch(e){ res.status(500).json({error:e.message}); }
 });
 
