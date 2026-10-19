@@ -374,6 +374,7 @@ details summary{cursor:pointer;font-weight:800}
     currentJobId=id;
     items=[];
     blankWorkingFields();
+    clearJobberFields();
     if($('jobName')) $('jobName').value=name;
     jobs[id]={id,name,updatedAt:new Date().toISOString(),items:[],selectedType:'Removal',fields:collectFields()};
     persistAll();
@@ -388,6 +389,7 @@ details summary{cursor:pointer;font-weight:800}
     items=Array.isArray(job.items) ? JSON.parse(JSON.stringify(job.items)) : [];
     selectedType=job.selectedType || 'Removal';
     blankWorkingFields();
+    clearJobberFields();
     applyFields(job.fields || {});
     if($('jobName')) $('jobName').value=job.name || '';
     showType(selectedType);
@@ -645,6 +647,21 @@ details summary{cursor:pointer;font-weight:800}
   const clientInput = $('jobberClient');
   const clientResults = $('jobberClientResults');
   const clientSelected = $('jobberClientSelected');
+  function clearJobberFields(){
+    ++clientSearchSequence;
+    clearTimeout(clientSearchTimeout);
+    clientInput.value='';
+    delete clientInput.dataset.clientId;
+    clientResults.replaceChildren();
+    clientResults.classList.add('hidden');
+    clientSelected.textContent='Search and select a matching client before creating a quote.';
+    $('jobberProperty').replaceChildren(new Option('Select a client first',''));
+    $('jobberProperty').disabled=true;
+    $('jobberRequest').replaceChildren(new Option('Select a client first',''));
+    $('jobberRequest').disabled=true;
+    $('requestHint').textContent='Select an assessment to test linked quote creation.';
+    $('jobberMessage').textContent='';
+  }
   clientInput.addEventListener('input', ()=>{
     clientInput.dataset.clientId = '';
     clientSelected.textContent = 'Select a matching client from the list.';
