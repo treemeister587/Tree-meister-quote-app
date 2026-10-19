@@ -232,6 +232,9 @@ details summary{cursor:pointer;font-weight:800}
       <div>
         <label>Property</label>
         <select id="jobberProperty" disabled><option value="">Select a client first</option></select>
+        <label style="margin-top:12px">Use existing completed assessment (test)</label>
+        <select id="jobberRequest" disabled><option value="">Select a client first</option></select>
+        <div class="rate-note" id="requestHint">Select an assessment to test linked quote creation. This will not create an unlinked quote.</div>
       </div>
     </div>
     <div class="row" style="margin-top:12px">
@@ -648,6 +651,8 @@ details summary{cursor:pointer;font-weight:800}
     clientResults.classList.add('hidden');
     $('jobberProperty').replaceChildren(new Option('Select a client first',''));
     $('jobberProperty').disabled=true;
+    $('jobberRequest').replaceChildren(new Option('Select a client first',''));
+    $('jobberRequest').disabled=true;
     clientResults.replaceChildren();
     const seq = ++clientSearchSequence;
     clearTimeout(clientSearchTimeout);
@@ -694,6 +699,24 @@ details summary{cursor:pointer;font-weight:800}
     clientInput.value=option.textContent;
     clientSelected.textContent='Selected Jobber client: '+option.textContent;
     clientResults.classList.add('hidden');
+    const requestSelect=$('jobberRequest');
+    requestSelect.replaceChildren(new Option('Loading completed assessments...',''));
+    requestSelect.disabled=true;
+    $('requestHint').textContent='Looking for completed assessments for this client.';
+    jobberFetch('/api/jobber/clients/'+encodeURIComponent(option.value)+'/requests').then(data=>{
+      if(clientInput.dataset.clientId!==option.value)return;
+      requestSelect.replaceChildren(new Option('Choose completed assessment',''));
+      (data.requests||[]).forEach(req=>{
+        const opt=new Option(req.title+' — '+req.id,req.id);
+        opt.dataset.propertyId=req.propertyId||'';
+        requestSelect.add(opt);
+      });
+      requestSelect.disabled=!(data.requests||[]).length;
+      $('requestHint').textContent=data.requests?.length?'Select an assessment to test a linked quote.':'No completed assessments found for this client.';
+    }).catch(e=>{
+      requestSelect.replaceChildren(new Option('Request lookup unavailable',''));
+      $('requestHint').textContent='Request lookup failed: '+e.message;
+    });
     const prop=$('jobberProperty');
     prop.replaceChildren(new Option('Loading properties...',''));
     prop.disabled=true;
@@ -724,12 +747,14 @@ details summary{cursor:pointer;font-weight:800}
     if(!items.length){ msg.textContent='Add at least one line item first.'; return; }
     if(!clientInput.dataset.clientId){ msg.textContent='Search for and select a Jobber client from the results first.'; return; }
     if(!$('jobberProperty').value){ msg.textContent='Select a property for this client first.'; return; }
+    if($('jobberRequest').value && $('jobberRequest').selectedOptions[0]?.dataset.propertyId && $('jobberRequest').selectedOptions[0].dataset.propertyId!==$('jobberProperty').value){ msg.textContent='Choose the same property as the selected assessment.'; return; }
     msg.textContent='Creating draft quote...';
     try{
       const payload={
         title:($('jobName').value||'').trim(),
         clientId:($('jobberClient').dataset.clientId||'').trim(),
         propertyId:$('jobberProperty').value,
+        requestId:$('jobberRequest').value || undefined,
         lineItems:items.map(it=>({name:it.type,description:it.description,quantity:1,unitPrice:it.price}))
       };
       const out=await jobberFetch('/api/jobber/quotes',{method:'POST',body:JSON.stringify(payload)});
