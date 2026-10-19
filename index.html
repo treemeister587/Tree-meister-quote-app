@@ -239,9 +239,8 @@ details summary{cursor:pointer;font-weight:800}
       <div>
         <label>Property</label>
         <select id="jobberProperty" disabled><option value="">Select a client first</option></select>
-        <label style="margin-top:12px">Use existing completed assessment (test)</label>
-        <select id="jobberRequest" disabled><option value="">Select a client first</option></select>
-        <div class="rate-note" id="requestHint">Select an assessment to test linked quote creation. This will not create an unlinked quote.</div>
+        <select id="jobberRequest" class="hidden" disabled aria-label="Linked request"><option value="">Select a client first</option></select>
+        <div id="requestHint" class="rate-note hidden"></div>
       </div>
     </div>
     <div class="row" style="margin-top:12px">
@@ -796,7 +795,7 @@ details summary{cursor:pointer;font-weight:800}
         opt.dataset.propertyId=req.propertyId||'';
         requestSelect.add(opt);
       });
-      requestSelect.disabled=!(data.requests||[]).length;
+      requestSelect.disabled=!(data.requests||[]).length; // Internal only; no unverified request picker shown.
       $('requestHint').textContent=data.requests?.length?'Select an assessment to test a linked quote.':'No completed assessments found for this client.';
     }).catch(e=>{
       requestSelect.replaceChildren(new Option('Request lookup unavailable',''));
