@@ -133,8 +133,8 @@ app.post('/api/jobber/quotes', async (req,res)=>{
     };
     if(propertyId) input.propertyId = propertyId;
     if(title) input.title = title;
-    const mutation = `mutation CreateQuote($input:QuoteCreateInput!){ quoteCreate(input:$input){ quote{ id quoteNumber } userErrors{ message path } } }`;
-    const data = await jobberGraphQL(mutation, {input});
+    const mutation = `mutation CreateQuote($attributes:QuoteCreateAttributes!){ quoteCreate(attributes:$attributes){ quote{ id quoteNumber } userErrors{ message path } } }`;
+    const data = await jobberGraphQL(mutation, {attributes:input});
     const result = data.quoteCreate;
     if(result?.userErrors?.length) throw new Error(result.userErrors.map(e=>e.message).join('; '));
     res.json({ok:true, quote:result.quote, message:'Draft quote created in Jobber.'});
