@@ -102,10 +102,21 @@ app.get('/api/jobber/clients', async (req,res)=>{
   try{
     const q = String(req.query.q||'').trim();
     if(q.length < 2) return res.json({clients:[]});
+    // Prefer Jobber's server-side search so older clients are not excluded by pagination.
+    try{
+      const data=await jobberGraphQL(
+        'query SearchClients($q:String!){ clients(first:50,searchTerm:$q){ nodes{ id name } } }',
+        {q}
+      );
+      return res.json({clients:data.clients?.nodes||[]});
+    }catch(searchError){
+      if(!/searchTerm|Unknown argument|not defined/i.test(searchError.message)) throw searchError;
+      // Compatibility fallback for API versions without server-side search.
+    }
     const matches = [];
     let after = null;
     // Jobber paginates clients. Look beyond the initial 50 records for a match.
-    for(let page=0; page<20 && matches.length<25; page++){
+    for(let page=0; page<100 && matches.length<25; page++){
       const data = await jobberGraphQL(
         `query Clients($first:Int!, $after:String){ clients(first:$first, after:$after){ nodes{ id name } pageInfo{ hasNextPage endCursor } } }`,
         {first:50, after}
