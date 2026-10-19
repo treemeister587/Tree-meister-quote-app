@@ -122,16 +122,38 @@ app.get('/api/jobber/clients', async (req,res)=>{
   }catch(e){ res.status(500).json({error:e.message}); }
 });
 
+app.get('/api/jobber/clients/:clientId/properties', async (req,res)=>{
+  try {
+    const clientId=String(req.params.clientId||'');
+    const properties=[];
+    let after=null;
+    for(let page=0;page<20;page++){
+      const data=await jobberGraphQL(
+        `query Properties($first:Int!,$after:String){ properties(first:$first,after:$after){ nodes{ id client{ id } address{ street1 city } } pageInfo{ hasNextPage endCursor } } }`,
+        {first:50,after}
+      );
+      const conn=data.properties;
+      for(const p of conn?.nodes||[]){
+        if(p.client?.id===clientId) properties.push({id:p.id,label:[p.address?.street1,p.address?.city].filter(Boolean).join(', ')||'Property'});
+      }
+      if(!conn?.pageInfo?.hasNextPage||!conn.pageInfo.endCursor)break;
+      after=conn.pageInfo.endCursor;
+    }
+    res.json({properties});
+  }catch(e){res.status(500).json({error:e.message});}
+});
+
 app.post('/api/jobber/quotes', async (req,res)=>{
   try{
     const {clientId, propertyId, lineItems, title} = req.body || {};
     if(!clientId) return res.status(400).json({error:'Select a Jobber client first.'});
+    if(!propertyId) return res.status(400).json({error:'Select a Jobber property first.'});
     if(!Array.isArray(lineItems) || !lineItems.length) return res.status(400).json({error:'Add at least one quote line item first.'});
     const input = {
       clientId,
-      lineItems: lineItems.map(x=>({name:x.name||'Tree work', description:x.description||'', quantity:Number(x.quantity||1), unitPrice:Number(x.unitPrice||0)}))
+      lineItems: lineItems.map(x=>({name:x.name||'Tree work', description:x.description||'', quantity:Number(x.quantity||1), unitPrice:Number(x.unitPrice||0), saveToProductsAndServices:false}))
     };
-    if(propertyId) input.propertyId = propertyId;
+    input.propertyId = propertyId;
     if(title) input.title = title;
     const mutation = `mutation CreateQuote($attributes:QuoteCreateAttributes!){ quoteCreate(attributes:$attributes){ quote{ id quoteNumber } userErrors{ message path } } }`;
     const data = await jobberGraphQL(mutation, {attributes:input});
