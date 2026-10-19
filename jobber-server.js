@@ -101,10 +101,24 @@ app.get('/api/jobber/callback', async (req,res)=>{
 app.get('/api/jobber/clients', async (req,res)=>{
   try{
     const q = String(req.query.q||'').trim();
-    const data = await jobberGraphQL(`query Clients($first:Int!){ clients(first:$first){ nodes{ id name emails{ address primary } phones{ number primary } } } }`, {first:50});
-    let clients = data.clients?.nodes || [];
-    if(q){ const s=q.toLowerCase(); clients=clients.filter(c=>(c.name||'').toLowerCase().includes(s)); }
-    res.json({clients});
+    if(q.length < 2) return res.json({clients:[]});
+    const matches = [];
+    let after = null;
+    // Jobber paginates clients. Look beyond the initial 50 records for a match.
+    for(let page=0; page<20 && matches.length<25; page++){
+      const data = await jobberGraphQL(
+        `query Clients($first:Int!, $after:String){ clients(first:$first, after:$after){ nodes{ id name } pageInfo{ hasNextPage endCursor } } }`,
+        {first:50, after}
+      );
+      const connection = data.clients;
+      for(const client of connection?.nodes || []){
+        if((client.name || '').toLowerCase().includes(q.toLowerCase())) matches.push(client);
+        if(matches.length >= 25) break;
+      }
+      if(!connection?.pageInfo?.hasNextPage || !connection.pageInfo.endCursor) break;
+      after = connection.pageInfo.endCursor;
+    }
+    res.json({clients:matches});
   }catch(e){ res.status(500).json({error:e.message}); }
 });
 
