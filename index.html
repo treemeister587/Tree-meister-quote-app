@@ -843,10 +843,23 @@ details summary{cursor:pointer;font-weight:800}
         clientId:($('jobberClient').dataset.clientId||'').trim(),
         propertyId:$('jobberProperty').value,
         requestId:$('jobberRequest').value || undefined,
-        lineItems:items.map(it=>({name:({Removal:'Tree Removal',Trim:'Tree Trimming',Cable:'Cabling',Stump:'Stump Grinding'})[it.type]||it.type,description:it.description,quantity:1,unitPrice:it.price}))
+        lineItems:items.map(it=>({name:({Removal:'Tree Removal',Trim:'Tree Trimming',Cable:'Cabling',Stump:'Stump Grinding'})[it.type]||it.type,description:it.description,quantity:1,unitPrice:it.price})),
+        internalNotes:items.map((it,i)=>it.internalNote?'Line item '+(i+1)+' — Tree Removal\n'+it.internalNote:'').filter(Boolean).join('\n\n')
       };
       const out=await jobberFetch('/api/jobber/quotes',{method:'POST',body:JSON.stringify(payload)});
       msg.textContent=out.message||'Draft quote created in Jobber.';
+      if(out.internalNoteWarning){
+        msg.textContent+=' '+out.internalNoteWarning;
+        const noteText=payload.internalNotes;
+        if(noteText){
+          const copy=document.createElement('button');
+          copy.type='button';
+          copy.className='small';
+          copy.textContent='Copy crane notes';
+          copy.addEventListener('click',()=>copyText(noteText,copy));
+          msg.after(copy);
+        }
+      }
     }catch(e){ msg.textContent=e.message; }
   });
 
