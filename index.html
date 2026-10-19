@@ -132,6 +132,29 @@ details summary{cursor:pointer;font-weight:800}
           </select>
         </div>
       </div>
+      <details class="card" style="margin-top:12px">
+          <summary>Use crane for this removal <span class="pill">internal only</span></summary>
+          <div style="height:12px"></div>
+          <div class="grid">
+            <div><label>Crane hourly rate ($/hr)</label><input id="craneRate" type="number" min="0" step="1" placeholder="Enter rate"></div>
+            <div><label>Number of picks</label><input id="cranePicks" type="number" min="0" step="1" value="0"></div>
+            <div><label>Time per pick (hours)</label><input id="craneTimePerPick" type="number" min="0" step=".05" value=".25"></div>
+            <div><label>Travel time (hours)</label><input id="craneTravel" type="number" min="0" step=".25" value="0"></div>
+          </div>
+          <div class="space" style="margin-top:12px">
+            <div>
+              <div class="muted">Calculated crane time</div>
+              <strong id="craneHours">0 hr</strong>
+            </div>
+            <div style="text-align:right">
+              <div class="muted">Crane cost</div>
+              <strong id="craneCost">$0.00</strong>
+            </div>
+          </div>
+          <div class="rate-note">Crane time and cost are added to this removal price. These details are not included in the customer description.</div>
+        </details>
+      
+      
     </div>
 
     <div id="trimOptions" class="hidden" style="margin-top:12px">
@@ -189,30 +212,6 @@ details summary{cursor:pointer;font-weight:800}
       <span id="status" class="muted"></span>
     </div>
   </div>
-
-  <details class="card">
-    <summary>Crane pricing <span class="pill">separate</span></summary>
-    <div style="height:12px"></div>
-    <div class="grid">
-      <div><label>Crane hourly rate ($/hr)</label><input id="craneRate" type="number" min="0" step="1" placeholder="Enter rate"></div>
-      <div><label>Number of picks</label><input id="cranePicks" type="number" min="0" step="1" value="0"></div>
-      <div><label>Time per pick (hours)</label><input id="craneTimePerPick" type="number" min="0" step=".05" value=".25"></div>
-      <div><label>Travel time (hours)</label><input id="craneTravel" type="number" min="0" step=".25" value="0"></div>
-    </div>
-    <div class="space" style="margin-top:12px">
-      <div>
-        <div class="muted">Calculated crane time</div>
-        <strong id="craneHours">0 hr</strong>
-      </div>
-      <div style="text-align:right">
-        <div class="muted">Crane cost</div>
-        <strong id="craneCost">$0.00</strong>
-      </div>
-    </div>
-    <div class="row" style="margin-top:12px">
-      <button id="addCrane" class="primary">Add crane as separate line item</button>
-    </div>
-  </details>
 
   <div class="card">
     <div class="space">
@@ -533,12 +532,14 @@ details summary{cursor:pointer;font-weight:800}
             <div class="price">${money(it.price)}</div>
           </div>
           <div class="desc"></div>
+          <div class="rate-note internalNote" style="white-space:pre-wrap"></div>
           <div class="actions">
             <button class="small copyDesc">Copy Description</button>
             <button class="small copyFull">Copy Full Line</button>
             <button class="small danger remove">Remove</button>
           </div>`;
         div.querySelector('.desc').textContent=it.description;
+        div.querySelector('.internalNote').textContent=it.internalNote ? 'Internal: '+it.internalNote : '';
         div.querySelector('.copyDesc').addEventListener('click',()=>copyText(it.description,div.querySelector('.copyDesc')));
         div.querySelector('.copyFull').addEventListener('click',()=>copyText(`${it.type} — ${money(it.price)}\n${it.description}`,div.querySelector('.copyFull')));
         div.querySelector('.remove').addEventListener('click',()=>{items.splice(i,1);render();});
@@ -567,8 +568,12 @@ details summary{cursor:pointer;font-weight:800}
     const hrs=Number($('hours').value);
     if(!Number.isFinite(hrs)||hrs<=0){$('status').textContent='Enter the estimated hours.';return;}
     const desc=buildDescription();
-    const price=round5(hrs*currentRate());
-    items.push({type:selectedType,hours:hrs,price,description:desc});
+    const crane=selectedType==='Removal'?calcCrane():null;
+    const price=round5(hrs*currentRate()+(crane?.cost||0));
+    const internalNote=crane && (crane.picks>0 || crane.travel>0)
+      ? 'Crane: '+crane.picks+' picks × '+crane.per+' hr; travel '+crane.travel+' hr; crane rate '+money(crane.rate)+'/hr; crane total '+crane.h+' hr, '+money(crane.cost)+'.'
+      : '';
+    items.push({type:selectedType,hours:hrs+(crane?.h||0),price,description:desc,internalNote});
     $('status').textContent='Line item added.';
     $('hours').value=''; $('treeLocation').value=''; $('notes').value='';
     render();
@@ -586,14 +591,6 @@ details summary{cursor:pointer;font-weight:800}
     return {h,cost,picks,per,travel,rate};
   }
   ['cranePicks','craneTimePerPick','craneTravel','craneRate'].forEach(id=>$(id).addEventListener('input',calcCrane));
-
-  $('addCrane').addEventListener('click',()=>{
-    const c=calcCrane();
-    if(c.h<=0) return;
-    const description=`Crane service for tree work.\nIncludes ${c.picks} crane pick${c.picks===1?'':'s'}${c.travel>0?` and ${c.travel} hour${c.travel===1?'':'s'} of crane travel time`:''}.`;
-    items.push({type:'Crane',hours:c.h,price:c.cost,description});
-    render();
-  });
 
   let clearArmed=false;
   let clearTimer=null;
