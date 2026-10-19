@@ -224,11 +224,17 @@ details summary{cursor:pointer;font-weight:800}
     </div>
     <div class="grid" style="margin-top:12px">
       <div>
+        <label>Requests awaiting a quote</label>
+        <select id="assessmentPicker" disabled><option value="">Connect Jobber to load requests</option></select>
+        <button id="loadAssessments" type="button" class="small" style="margin-top:7px">Refresh request list</button>
+        <div class="rate-note" id="assessmentNotice">Jobber's API does not expose the Assessment Completed status in the current integration. Verify the request status in Jobber before selecting it.</div>
+        <details style="margin-top:12px"><summary>Find a different client</summary>
         <label>Client</label>
         <input id="jobberClient" type="text" placeholder="Type a client name to search Jobber" autocomplete="off" disabled>
         <button id="recentJobberClients" class="small" type="button" style="margin-top:7px">Show recent clients</button>
         <select id="jobberClientResults" class="hidden" size="5" aria-label="Matching Jobber clients" style="margin-top:6px"></select>
         <div class="rate-note" id="jobberClientSelected">Search and select a matching client before creating a quote.</div>
+        </details>
       </div>
       <div>
         <label>Property</label>
@@ -633,6 +639,7 @@ details summary{cursor:pointer;font-weight:800}
         $('jobberClient').disabled=false;
         // Property selection is not implemented; propertyId is optional.
         $('sendJobber').disabled=false;
+        loadAssessmentChoices();
       }else{
         $('jobberStatus').textContent='Not connected';
         $('sendJobber').disabled=true;
@@ -661,7 +668,54 @@ details summary{cursor:pointer;font-weight:800}
     $('jobberRequest').disabled=true;
     $('requestHint').textContent='Select an assessment to test linked quote creation.';
     $('jobberMessage').textContent='';
+    $('assessmentPicker').value='';
   }
+  async function loadAssessmentChoices(){
+    const picker=$('assessmentPicker');
+    picker.replaceChildren(new Option('Loading existing requests...',''));
+    picker.disabled=true;
+    try{
+      const data=await jobberFetch('/api/jobber/requests/recent');
+      picker.replaceChildren(new Option('Select an existing request (verify completed status)',''));
+      for(const r of data.requests||[]){
+        const opt=new Option(r.clientName+' — '+r.title, r.id);
+        opt.dataset.clientId=r.clientId;
+        opt.dataset.clientName=r.clientName;
+        opt.dataset.propertyId=r.propertyId;
+        picker.add(opt);
+      }
+      picker.disabled=!(data.requests||[]).length;
+      $('assessmentNotice').textContent=(data.requests||[]).length
+        ? 'This list includes accessible requests, not only completed assessments. Verify its status in Jobber.'
+        : 'No accessible requests found. Check Jobber request permissions.';
+    }catch(e){
+      picker.replaceChildren(new Option('Request lookup unavailable',''));
+      $('assessmentNotice').textContent='Unable to load requests: '+e.message+'. Check request permissions in Jobber.';
+    }
+  }
+  $('loadAssessments').addEventListener('click',loadAssessmentChoices);
+  $('assessmentPicker').addEventListener('change',async ()=>{
+    const option=$('assessmentPicker').selectedOptions[0];
+    if(!option?.value)return;
+    clearJobberFields();
+    clientInput.value=option.dataset.clientName||'';
+    clientInput.dataset.clientId=option.dataset.clientId||'';
+    $('jobberRequest').replaceChildren(new Option(option.textContent,option.value));
+    $('jobberRequest').disabled=false;
+    $('jobberRequest').value=option.value;
+    $('jobberRequest').selectedOptions[0].dataset.propertyId=option.dataset.propertyId||'';
+    clientSelected.textContent='Selected from existing request';
+    const prop=$('jobberProperty');
+    prop.replaceChildren(new Option('Loading properties...',''));
+    try{
+      const response=await jobberFetch('/api/jobber/clients/'+encodeURIComponent(clientInput.dataset.clientId)+'/properties');
+      prop.replaceChildren(new Option('Select a property',''));
+      (response.properties||[]).forEach(p=>prop.add(new Option(p.label,p.id)));
+      prop.disabled=!(response.properties||[]).length;
+      if(option.dataset.propertyId && [...prop.options].some(p=>p.value===option.dataset.propertyId))prop.value=option.dataset.propertyId;
+      else if(response.properties?.length===1)prop.value=response.properties[0].id;
+    }catch(e){prop.replaceChildren(new Option('Property lookup failed',''));$('assessmentNotice').textContent=e.message;}
+  });
   clientInput.addEventListener('input', ()=>{
     clientInput.dataset.clientId = '';
     clientSelected.textContent = 'Select a matching client from the list.';
