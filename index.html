@@ -517,6 +517,7 @@ details summary{cursor:pointer;font-weight:800}
     if(selectedType!=='Trim')return '';
     return buildDescription();
   }
+  $('treeLocation').addEventListener('input',updateTrimUI);
   document.querySelectorAll('.presetBtn').forEach(button=>button.addEventListener('click',()=>{
     $(button.dataset.target).value=button.dataset.value;
     updateTrimUI();
