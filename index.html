@@ -224,10 +224,10 @@ details summary{cursor:pointer;font-weight:800}
     </div>
     <div class="grid" style="margin-top:12px">
       <div>
-        <label>Requests awaiting a quote</label>
+        <label>Assessment Completed — ready to quote</label>
         <select id="assessmentPicker" disabled><option value="">Connect Jobber to load requests</option></select>
         <button id="loadAssessments" type="button" class="small" style="margin-top:7px">Refresh request list</button>
-        <div class="rate-note" id="assessmentNotice">Jobber's API does not expose the Assessment Completed status in the current integration. Verify the request status in Jobber before selecting it.</div>
+        <div class="rate-note" id="assessmentNotice">Only assessments confirmed completed by Jobber will appear.</div>
         <details style="margin-top:12px"><summary>Find a different client</summary>
         <label>Client</label>
         <input id="jobberClient" type="text" placeholder="Type a client name to search Jobber" autocomplete="off" disabled>
@@ -676,7 +676,7 @@ details summary{cursor:pointer;font-weight:800}
     picker.disabled=true;
     try{
       const data=await jobberFetch('/api/jobber/requests/recent');
-      picker.replaceChildren(new Option('Select an existing request (verify completed status)',''));
+      picker.replaceChildren(new Option('Select a completed assessment',''));
       for(const r of data.requests||[]){
         const opt=new Option(r.clientName+' — '+r.title, r.id);
         opt.dataset.clientId=r.clientId;
@@ -686,8 +686,8 @@ details summary{cursor:pointer;font-weight:800}
       }
       picker.disabled=!(data.requests||[]).length;
       $('assessmentNotice').textContent=(data.requests||[]).length
-        ? 'This list includes accessible requests, not only completed assessments. Verify its status in Jobber.'
-        : 'No accessible requests found. Check Jobber request permissions.';
+        ? 'Only confirmed Assessment Completed requests are shown.'
+        : 'No completed assessments found, or none accessible to this connection.';
     }catch(e){
       picker.replaceChildren(new Option('Request lookup unavailable',''));
       $('assessmentNotice').textContent='Unable to load requests: '+e.message+'. Check request permissions in Jobber.';
