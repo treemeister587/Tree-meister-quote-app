@@ -175,12 +175,27 @@ app.get('/api/jobber/clients/:clientId/properties', async (req,res)=>{
 
 app.get('/api/jobber/requests/recent', async (req,res)=>{
   try{
+    // Fail closed: never present an unverified request as assessment completed.
+    const schema=await jobberGraphQL('{ __type(name:"Request"){ fields{ name type{ kind name ofType{ kind name } } } } }');
+    const fields=schema.__type?.fields||[];
+    const candidate=['requestStatus','assessmentStatus','workflowStatus','state','currentStatus']
+      .find(name=>fields.some(field=>field.name===name &&
+        ['SCALAR','ENUM'].includes(field.type?.kind==='NON_NULL'?field.type?.ofType?.kind:field.type?.kind)));
+    if(!candidate){
+      return res.status(422).json({error:'Jobber does not expose an Assessment Completed status field through this API connection. The list is hidden rather than including unfinished requests.'});
+    }
     const requests=[];
     let after=null;
-    for(let page=0;page<4;page++){
-      const data=await jobberGraphQL('query RecentRequests($first:Int!,$after:String){ requests(first:$first,after:$after){ nodes{ id title client{ id name } property{ id } } pageInfo{ hasNextPage endCursor } } }',{first:50,after});
+    const query='query VerifiedRequests($first:Int!,$after:String){ requests(first:$first,after:$after){ nodes{ id title client{ id name } property{ id } '+candidate+' } pageInfo{ hasNextPage endCursor } } }';
+    for(let page=0;page<20;page++){
+      const data=await jobberGraphQL(query,{first:50,after});
       const conn=data.requests;
-      for(const r of conn?.nodes||[]){if(r.client?.id)requests.push({id:r.id,title:r.title||'Request',clientId:r.client.id,clientName:r.client.name||'Unnamed client',propertyId:r.property?.id||''});}
+      for(const r of conn?.nodes||[]){
+        const status=String(r[candidate]||'').replace(/[_-]/g,' ').trim().toLowerCase();
+        if(r.client?.id && status==='assessment completed'){
+          requests.push({id:r.id,title:r.title||'Assessment completed',clientId:r.client.id,clientName:r.client.name||'Unnamed client',propertyId:r.property?.id||''});
+        }
+      }
       if(!conn?.pageInfo?.hasNextPage||!conn.pageInfo.endCursor)break;
       after=conn.pageInfo.endCursor;
     }
