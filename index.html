@@ -105,8 +105,8 @@ details summary{cursor:pointer;font-weight:800}
     </div>
 
     <div style="height:14px"></div>
-    <div class="grid">
-      <div>
+    <div class="grid" id="standardHoursHome">
+      <div id="standardHoursWrap">
         <label>Estimated time (hours)</label>
         <input id="hours" type="number" min="0" step=".25" placeholder="2.5">
       </div>
@@ -170,6 +170,7 @@ details summary{cursor:pointer;font-weight:800}
 <label>Brush & log handling</label><select id="trimDebris"><option value="haul">Haul all trimming debris</option><option value="leaveAll">Leave all</option><option value="leaveLogs">Leaving logs</option><option value="leaveRounds">Leaving rounds</option></select>
 <div style="height:10px"></div><label>Other trimming detail</label><input id="trimOther" type="text" placeholder="Optional extra trimming instruction">
 <div class="trimPreview"><strong>Finished description preview</strong><div id="trimPreviewText" class="desc"></div></div>
+<div id="trimHoursSlot" style="margin-top:12px"></div>
 </div>
 
     <div id="stumpOptions" class="hidden" style="margin-top:12px">
@@ -451,6 +452,9 @@ details summary{cursor:pointer;font-weight:800}
   function showType(type){
     selectedType=type;
     document.querySelectorAll('.typeBtn').forEach(b=>b.classList.toggle('active',b.dataset.type===type));
+    const hoursField=$('standardHoursWrap');
+    const target=type==='Trim' ? $('trimHoursSlot') : $('standardHoursHome');
+    if(hoursField && target && hoursField.parentElement!==target) target.appendChild(hoursField);
     $('removalOptions').classList.toggle('hidden',type!=='Removal');
     $('trimOptions').classList.toggle('hidden',type!=='Trim');
     $('stumpOptions').classList.toggle('hidden',type!=='Stump');
