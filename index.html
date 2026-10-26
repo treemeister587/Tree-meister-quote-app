@@ -101,7 +101,7 @@ details summary{cursor:pointer;font-weight:800}
       <button class="typeBtn active" data-type="Removal">Removal</button>
       <button class="typeBtn" data-type="Trim">Trim</button>
       <button class="typeBtn" data-type="Cable">Cable</button>
-      <button class="typeBtn" data-type="Stump">Stump</button>
+      <button class="typeBtn" data-type="Stump">Stump(s)</button>
     </div>
 
     <div style="height:14px"></div>
@@ -496,7 +496,7 @@ details summary{cursor:pointer;font-weight:800}
       t += '\n' + debrisWording($('trimDebris').value,true);
     }
     if(selectedType==='Stump'){
-      t=`Grinding ${lowerLead(tl) || 'the stump'} 6 inches below the surface.\n`;
+      t=`Grinding ${lowerLead(tl) || 'the stump(s)'} 6 inches below the surface.\n`;
       t += $('mulch').value==='haul'
         ? 'Includes hauling away the excess mulch and leaving the area level.'
         : 'Leaving the excess mulch in a pile next to the stump.';
