@@ -54,6 +54,7 @@ details summary{cursor:pointer;font-weight:800}
 </head>
 <body>
 <div class="wrap">
+  <div class="card" style="padding:10px 14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap"><label for="salespersonPicker" style="margin:0;font-weight:700">Salesperson</label><select id="salespersonPicker" style="width:auto;min-width:170px;flex:1" disabled><option value="">Connect Jobber to load salespeople</option></select><span id="salespersonNotice" class="muted" style="font-size:12px">Saved on this device</span></div>
   <h1>Tree Meister Quote App</h1>
   <div class="sub">Save estimates by job, build Jobber-ready line items, and come back to them later. Saved jobs stay in this browser on this device.</div>
 <div class="card" style="padding:10px 14px"><strong>Auto-save is on.</strong> You can close this page and reopen this same file later on this device.</div>
@@ -648,6 +649,26 @@ details summary{cursor:pointer;font-weight:800}
     return r.json();
   }
 
+  const salespersonPicker=$('salespersonPicker');
+  async function loadJobberSalespeople(){
+    try{
+      const result=await jobberFetch('/api/jobber/salespeople');
+      const selected=localStorage.getItem('tree_meister_salesperson_id')||'';
+      salespersonPicker.replaceChildren(new Option('Select salesperson',''));
+      (result.salespeople||[]).forEach(p=>salespersonPicker.add(new Option(p.name,p.id)));
+      if(selected && [...salespersonPicker.options].some(p=>p.value===selected))salespersonPicker.value=selected;
+      salespersonPicker.disabled=false;
+      $('salespersonNotice').textContent='Selection saved on this device';
+    }catch(e){
+      salespersonPicker.replaceChildren(new Option('Salespeople unavailable',''));
+      salespersonPicker.disabled=true;
+      $('salespersonNotice').textContent=e.message;
+    }
+  }
+  salespersonPicker.addEventListener('change',()=>{
+    localStorage.setItem('tree_meister_salesperson_id',salespersonPicker.value);
+    $('salespersonNotice').textContent='Selection saved on this device';
+  });
   async function refreshJobberStatus(){
     try{
       const s=await jobberFetch('/api/jobber/status');
@@ -657,6 +678,7 @@ details summary{cursor:pointer;font-weight:800}
         // Property selection is not implemented; propertyId is optional.
         $('sendJobber').disabled=false;
         loadAssessmentChoices();
+        loadJobberSalespeople();
       }else{
         $('jobberStatus').textContent='Not connected';
         $('sendJobber').disabled=true;
@@ -888,6 +910,7 @@ details summary{cursor:pointer;font-weight:800}
         clientId:($('jobberClient').dataset.clientId||'').trim(),
         propertyId:$('jobberProperty').value,
         requestId:$('jobberRequest').value || undefined,
+        salespersonId:salespersonPicker.value || undefined,
         lineItems:items.map(it=>({name:({Removal:'Tree Removal',Trim:'Tree Trimming',Cable:'Cabling',Stump:'Stump Grinding'})[it.type]||it.type,description:it.description,quantity:1,unitPrice:it.price})),
         internalNotes:items.map((it,i)=>it.internalNote?'Line item '+(i+1)+' — Tree Removal\n'+it.internalNote:'').filter(Boolean).join('\n\n')
       };
