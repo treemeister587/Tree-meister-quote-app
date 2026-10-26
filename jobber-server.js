@@ -300,8 +300,11 @@ async function attachInternalQuoteNote(quoteId, noteText){
 
 app.get('/api/jobber/salespeople',async(req,res)=>{
   try{
-    const data=await jobberGraphQL('query QuoteSalespeople { users(first:100){ nodes{ id name } } }');
-    const users=(data.users?.nodes||[]).filter(u=>u.id && u.name);
+    const data=await jobberGraphQL('query QuoteSalespeople { users(first:100){ nodes{ id name { first last } } } }');
+    const users=(data.users?.nodes||[]).map(u=>({
+      id:u.id,
+      name:[u.name?.first,u.name?.last].filter(Boolean).join(' ').trim()
+    })).filter(u=>u.id && u.name);
     res.json({salespeople:users});
   }catch(e){res.status(500).json({error:'Unable to load Jobber team members: '+e.message});}
 });
