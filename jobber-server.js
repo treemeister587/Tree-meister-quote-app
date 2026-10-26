@@ -127,23 +127,25 @@ app.get('/api/jobber/callback', async (req,res)=>{
   }catch(e){ res.status(500).send('Jobber connection failed: '+e.message); }
 });
 
-const readCacheRoutes=[
-  [/^\\/api\\/jobber\\/recent-clients$/,90000],
-  [/^\\/api\\/jobber\\/requests\\/recent$/,90000],
-  [/^\\/api\\/jobber\\/clients\\/[^/]+\\/properties$/,120000],
-  [/^\\/api\\/jobber\\/clients\\/[^/]+\\/requests$/,90000],
-  [/^\\/api\\/jobber\\/clients$/,45000]
-];
+function readCacheTTL(path){
+  if(path==='/api/jobber/recent-clients'||path==='/api/jobber/requests/recent')return 90000;
+  if(path==='/api/jobber/clients')return 45000;
+  if(path.startsWith('/api/jobber/clients/')){
+    if(path.endsWith('/properties'))return 120000;
+    if(path.endsWith('/requests'))return 90000;
+  }
+  return 0;
+}
 app.use((req,res,next)=>{
   if(req.method!=='GET')return next();
-  const rule=readCacheRoutes.find(([pattern])=>pattern.test(req.path));
-  if(!rule)return next();
+  const ttl=readCacheTTL(req.path);
+  if(!ttl)return next();
   const key=req.originalUrl;
   const hit=responseCache.get(key);
   if(hit?.expiry>Date.now())return res.json(hit.value);
   const originalJson=res.json.bind(res);
   res.json=(body)=>{
-    if(res.statusCode>=200 && res.statusCode<300) responseCache.set(key,{value:body,expiry:Date.now()+rule[1]});
+    if(res.statusCode>=200 && res.statusCode<300)responseCache.set(key,{value:body,expiry:Date.now()+ttl});
     return originalJson(body);
   };
   next();
