@@ -208,7 +208,7 @@ app.get('/api/jobber/clients/:clientId/properties', async (req,res)=>{
     const clientId=String(req.params.clientId||'');
     const properties=[];
     let after=null;
-    for(let page=0;page<10;page++){
+    for(let page=0;page<20;page++){
       const data=await jobberGraphQL(
         `query Properties($first:Int!,$after:String){ properties(first:$first,after:$after){ nodes{ id client{ id } address{ street1 city } } pageInfo{ hasNextPage endCursor } } }`,
         {first:50,after}
