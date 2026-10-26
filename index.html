@@ -722,15 +722,37 @@ details summary{cursor:pointer;font-weight:800}
     $('jobberRequest').selectedOptions[0].dataset.propertyId=option.dataset.propertyId||'';
     clientSelected.textContent='Selected from existing request';
     const prop=$('jobberProperty');
-    prop.replaceChildren(new Option('Loading properties...',''));
+    const linkedPropertyId=option.dataset.propertyId||'';
+    // The selected request already supplies the exact property ID. Do not lose it
+    // when the separate property-list query is empty, delayed, or throttled.
+    prop.replaceChildren(new Option(linkedPropertyId?'Request property (loading address...)':'Loading properties...',linkedPropertyId));
+    prop.disabled=!linkedPropertyId;
+    const selectedClientId=clientInput.dataset.clientId;
     try{
-      const response=await jobberFetch('/api/jobber/clients/'+encodeURIComponent(clientInput.dataset.clientId)+'/properties');
+      const response=await jobberFetch('/api/jobber/clients/'+encodeURIComponent(selectedClientId)+'/properties');
+      if(clientInput.dataset.clientId!==selectedClientId)return;
       prop.replaceChildren(new Option('Select a property',''));
       (response.properties||[]).forEach(p=>prop.add(new Option(p.label,p.id)));
-      prop.disabled=!(response.properties||[]).length;
-      if(option.dataset.propertyId && [...prop.options].some(p=>p.value===option.dataset.propertyId))prop.value=option.dataset.propertyId;
-      else if(response.properties?.length===1)prop.value=response.properties[0].id;
-    }catch(e){prop.replaceChildren(new Option('Property lookup failed',''));$('assessmentNotice').textContent=e.message;}
+      if(linkedPropertyId){
+        if(![...prop.options].some(p=>p.value===linkedPropertyId)){
+          prop.add(new Option('Property linked to selected request',linkedPropertyId));
+        }
+        prop.value=linkedPropertyId;
+      }else if(response.properties?.length===1)prop.value=response.properties[0].id;
+      prop.disabled=![...prop.options].some(p=>p.value);
+      if(!linkedPropertyId && !response.properties?.length)clientSelected.textContent='No properties returned for this client.';
+    }catch(e){
+      if(clientInput.dataset.clientId!==selectedClientId)return;
+      if(linkedPropertyId){
+        prop.replaceChildren(new Option('Property linked to selected request',linkedPropertyId));
+        prop.disabled=false;
+        clientSelected.textContent='Selected request property. Address lookup unavailable: '+e.message;
+      }else{
+        prop.replaceChildren(new Option('Property lookup failed',''));
+        prop.disabled=true;
+        $('assessmentNotice').textContent='Property lookup failed: '+e.message;
+      }
+    }
   });
   clientInput.addEventListener('input', ()=>{
     clientInput.dataset.clientId = '';
