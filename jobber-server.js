@@ -298,9 +298,17 @@ async function attachInternalQuoteNote(quoteId, noteText){
   if(data.noteCreate?.userErrors?.length)throw new Error(data.noteCreate.userErrors.map(e=>e.message).join('; '));
 }
 
+app.get('/api/jobber/salespeople',async(req,res)=>{
+  try{
+    const data=await jobberGraphQL('query QuoteSalespeople { users(first:100){ nodes{ id name } } }');
+    const users=(data.users?.nodes||[]).filter(u=>u.id && u.name);
+    res.json({salespeople:users});
+  }catch(e){res.status(500).json({error:'Unable to load Jobber team members: '+e.message});}
+});
+
 app.post('/api/jobber/quotes', async (req,res)=>{
   try{
-    const {clientId, propertyId, lineItems, title, requestId, internalNotes} = req.body || {};
+    const {clientId, propertyId, lineItems, title, requestId, internalNotes, salespersonId} = req.body || {};
     if(!clientId) return res.status(400).json({error:'Select a Jobber client first.'});
     if(!propertyId) return res.status(400).json({error:'Select a Jobber property first.'});
     if(!Array.isArray(lineItems) || !lineItems.length) return res.status(400).json({error:'Add at least one quote line item first.'});
@@ -322,6 +330,13 @@ app.post('/api/jobber/quotes', async (req,res)=>{
       const fields = (schema.__type?.inputFields || []).map(f=>f.name);
       if(!fields.includes('requestId')) return res.status(409).json({error:'Jobber does not expose request association on quoteCreate in this API version. No duplicate quote was created.'});
       input.requestId = String(requestId);
+    }
+    if(salespersonId){
+      const schema=await jobberGraphQL('{ __type(name:"QuoteCreateAttributes"){ inputFields{ name type{ kind name ofType{ kind name } } } } }');
+      const fields=schema.__type?.inputFields||[];
+      const field=fields.find(f=>['salespersonId','salesPersonId'].includes(f.name));
+      if(!field)return res.status(409).json({error:'This Jobber API version does not expose salesperson assignment during quote creation. No quote was created. Please assign the salesperson in Jobber.'});
+      input[field.name]=String(salespersonId);
     }
     const mutation = `mutation CreateQuote($attributes:QuoteCreateAttributes!){ quoteCreate(attributes:$attributes){ quote{ id quoteNumber } userErrors{ message path } } }`;
     const data = await jobberGraphQL(mutation, {attributes:input});
