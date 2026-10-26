@@ -234,6 +234,7 @@ details summary{cursor:pointer;font-weight:800}
         <select id="assessmentPicker" disabled><option value="">Connect Jobber to load requests</option></select>
         <button id="loadAssessments" type="button" class="small" style="margin-top:7px">Refresh request list</button>
         <div class="rate-note" id="assessmentNotice">Only assessments confirmed completed by Jobber will appear.</div>
+        <div id="selectedAssessmentClient" class="hidden" style="margin-top:10px;font-weight:700"></div>
         <details style="margin-top:12px"><summary>Find a different client</summary>
         <label>Client</label>
         <input id="jobberClient" type="text" placeholder="Type a client name to search Jobber" autocomplete="off" disabled>
@@ -242,7 +243,7 @@ details summary{cursor:pointer;font-weight:800}
         <div class="rate-note" id="jobberClientSelected">Search and select a matching client before creating a quote.</div>
         </details>
       </div>
-      <div>
+      <div id="propertySection">
         <label>Property</label>
         <select id="jobberProperty" disabled><option value="">Select a client first</option></select>
         <select id="jobberRequest" class="hidden" disabled aria-label="Linked request"><option value="">Select a client first</option></select>
@@ -685,6 +686,9 @@ details summary{cursor:pointer;font-weight:800}
     $('requestHint').textContent='Select an assessment to test linked quote creation.';
     $('jobberMessage').textContent='';
     $('assessmentPicker').value='';
+    $('selectedAssessmentClient').textContent='';
+    $('selectedAssessmentClient').classList.add('hidden');
+    $('propertySection').classList.remove('hidden');
   }
   async function loadAssessmentChoices(){
     const picker=$('assessmentPicker');
@@ -713,7 +717,13 @@ details summary{cursor:pointer;font-weight:800}
   $('assessmentPicker').addEventListener('change',async ()=>{
     const option=$('assessmentPicker').selectedOptions[0];
     if(!option?.value)return;
+    const selectedRequestId=option.value;
+    const selectedRequestName=option.dataset.clientName||'Unnamed client';
     clearJobberFields();
+    $('assessmentPicker').value=selectedRequestId;
+    $('selectedAssessmentClient').textContent='Client: '+selectedRequestName;
+    $('selectedAssessmentClient').classList.remove('hidden');
+    $('propertySection').classList.add('hidden');
     clientInput.value=option.dataset.clientName||'';
     clientInput.dataset.clientId=option.dataset.clientId||'';
     $('jobberRequest').replaceChildren(new Option(option.textContent,option.value));
