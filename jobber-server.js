@@ -43,20 +43,49 @@ async function accessToken(){
   return tokens.access_token;
 }
 
-async function jobberGraphQL(query, variables={}){
-  const token = await accessToken();
-  const r = await fetch('https://api.getjobber.com/api/graphql', {
-    method:'POST',
-    headers:{
-      'Authorization':`Bearer ${token}`,
-      'X-JOBBER-GRAPHQL-VERSION':JOBBER_GRAPHQL_VERSION,
-      'Content-Type':'application/json'
-    },
-    body:JSON.stringify({query, variables})
-  });
-  const data = await r.json();
-  if(!r.ok || data.errors) throw new Error(data.errors?.map(e=>e.message).join('; ') || 'Jobber API request failed.');
-  return data.data;
+const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
+let graphqlQueue=Promise.resolve();
+let lastCall=0;
+const responseCache=new Map();
+async function jobberGraphQL(query,variables={}){
+  async function perform(){
+    for(let attempt=0;attempt<5;attempt++){
+      await sleep(Math.max(0,200-(Date.now()-lastCall)));
+      lastCall=Date.now();
+      const token=await accessToken();
+      const r=await fetch('https://api.getjobber.com/api/graphql',{
+        method:'POST',headers:{
+          Authorization:`Bearer ${token}`,
+          'X-JOBBER-GRAPHQL-VERSION':JOBBER_GRAPHQL_VERSION,
+          'Content-Type':'application/json'
+        },body:JSON.stringify({query,variables})
+      });
+      const data=await r.json();
+      const errors=(data.errors||[]).map(e=>e.message).join('; ');
+      const throttled=r.status===429 || /throttl|rate.?limit|too many requests/i.test(errors);
+      if(throttled && attempt<4){
+        const retry=Number(r.headers.get('retry-after'));
+        await sleep(Number.isFinite(retry)&&retry>0?Math.min(retry*1000,30000):Math.min(1500*2**attempt,12000));
+        continue;
+      }
+      if(!r.ok || data.errors)throw new Error(errors||(throttled?'Jobber is temporarily throttling requests. Please retry shortly.':'Jobber API request failed.'));
+      return data.data;
+    }
+  }
+  const task=graphqlQueue.then(perform);
+  graphqlQueue=task.catch(()=>{});
+  return task;
+}
+// Cache read-only endpoints briefly and deduplicate simultaneous refreshes.
+function cachedResponse(key,ttl,load){
+  const item=responseCache.get(key);
+  if(item && (item.expiry>Date.now() || item.pending)) return item.pending||Promise.resolve(item.value);
+  const pending=Promise.resolve().then(load).then(value=>{
+    responseCache.set(key,{value,expiry:Date.now()+ttl});
+    return value;
+  }).catch(error=>{responseCache.delete(key);throw error;});
+  responseCache.set(key,{pending,expiry:0});
+  return pending;
 }
 
 app.get('/health', (req,res)=>res.json({ok:true}));
@@ -98,11 +127,33 @@ app.get('/api/jobber/callback', async (req,res)=>{
   }catch(e){ res.status(500).send('Jobber connection failed: '+e.message); }
 });
 
+const readCacheRoutes=[
+  [/^\\/api\\/jobber\\/recent-clients$/,90000],
+  [/^\\/api\\/jobber\\/requests\\/recent$/,90000],
+  [/^\\/api\\/jobber\\/clients\\/[^/]+\\/properties$/,120000],
+  [/^\\/api\\/jobber\\/clients\\/[^/]+\\/requests$/,90000],
+  [/^\\/api\\/jobber\\/clients$/,45000]
+];
+app.use((req,res,next)=>{
+  if(req.method!=='GET')return next();
+  const rule=readCacheRoutes.find(([pattern])=>pattern.test(req.path));
+  if(!rule)return next();
+  const key=req.originalUrl;
+  const hit=responseCache.get(key);
+  if(hit?.expiry>Date.now())return res.json(hit.value);
+  const originalJson=res.json.bind(res);
+  res.json=(body)=>{
+    if(res.statusCode>=200 && res.statusCode<300) responseCache.set(key,{value:body,expiry:Date.now()+rule[1]});
+    return originalJson(body);
+  };
+  next();
+});
+
 app.get('/api/jobber/recent-clients', async (req,res)=>{
   try{
     const clients=[];
     let after=null;
-    for(let page=0;page<20;page++){
+    for(let page=0;page<10;page++){
       const data=await jobberGraphQL(
         'query RecentClients($first:Int!,$after:String){ clients(first:$first,after:$after){ nodes{ id name createdAt } pageInfo{ hasNextPage endCursor } } }',
         {first:50,after}
@@ -135,7 +186,7 @@ app.get('/api/jobber/clients', async (req,res)=>{
     const matches = [];
     let after = null;
     // Jobber paginates clients. Look beyond the initial 50 records for a match.
-    for(let page=0; page<100 && matches.length<25; page++){
+    for(let page=0; page<12 && matches.length<25; page++){
       const data = await jobberGraphQL(
         `query Clients($first:Int!, $after:String){ clients(first:$first, after:$after){ nodes{ id name } pageInfo{ hasNextPage endCursor } } }`,
         {first:50, after}
@@ -157,7 +208,7 @@ app.get('/api/jobber/clients/:clientId/properties', async (req,res)=>{
     const clientId=String(req.params.clientId||'');
     const properties=[];
     let after=null;
-    for(let page=0;page<20;page++){
+    for(let page=0;page<10;page++){
       const data=await jobberGraphQL(
         `query Properties($first:Int!,$after:String){ properties(first:$first,after:$after){ nodes{ id client{ id } address{ street1 city } } pageInfo{ hasNextPage endCursor } } }`,
         {first:50,after}
@@ -187,7 +238,7 @@ app.get('/api/jobber/requests/recent', async (req,res)=>{
     const requests=[];
     let after=null;
     const query='query VerifiedRequests($first:Int!,$after:String){ requests(first:$first,after:$after){ nodes{ id title client{ id name } property{ id } '+candidate+' } pageInfo{ hasNextPage endCursor } } }';
-    for(let page=0;page<20;page++){
+    for(let page=0;page<10;page++){
       const data=await jobberGraphQL(query,{first:50,after});
       const conn=data.requests;
       for(const r of conn?.nodes||[]){
@@ -208,7 +259,7 @@ app.get('/api/jobber/clients/:clientId/requests', async (req,res)=>{
     const clientId=String(req.params.clientId||'');
     const matches=[];
     let after=null;
-    for(let page=0;page<15;page++){
+    for(let page=0;page<8;page++){
       const data=await jobberGraphQL(
         'query Requests($first:Int!,$after:String){ requests(first:$first,after:$after){ nodes{ id title client{ id } property{ id } } pageInfo{ hasNextPage endCursor } } }',
         {first:50,after}
