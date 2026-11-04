@@ -384,6 +384,9 @@ details summary{cursor:pointer;font-weight:800}
     blankWorkingFields();
     clearJobberFields();
     applyFields(job.fields || {});
+    const preferredCleanup = job.selectedType === 'Trim' ? $('trimDebris') : $('removalDebris');
+    const cleanup = preferredCleanup.value || 'haul';
+    cleanupFields.forEach(field => { field.value = cleanup; });
     if($('jobName')) $('jobName').value=job.name || '';
     showType(selectedType);
     updateTrimUI();
@@ -450,6 +453,25 @@ details summary{cursor:pointer;font-weight:800}
     if(value==='leaveRounds') return 'Leaving the logs cut into approximately 16” rounds in a pile. Includes hauling away the brush. Please note: this option will produce a large amount of sawdust that we will be unable to fully clean up.';
     return trimming ? 'Includes removal of all debris resulting from the trimming process.' : 'Includes removing all brush and logs.';
   }
+
+  const cleanupSuffixes = {leaveAll:' (leave all)', leaveLogs:' (Leaving Logs)', leaveRounds:' (Leaving Rounds)'};
+  const lineItemNames = {Removal:'Tree Removal', Trim:'Tree Trimming', Cable:'Cabling', Stump:'Stump Grinding'};
+
+  function lineItemName(item){
+    const name = lineItemNames[item.type] || item.type;
+    if(item.type !== 'Removal' && item.type !== 'Trim') return name;
+    const cleanup = item.cleanup ?? Object.keys(cleanupSuffixes).find(option =>
+      item.description?.split('\n').includes(debrisWording(option))
+    );
+    return name + (cleanupSuffixes[cleanup] || '');
+  }
+
+  const cleanupFields = [$('removalDebris'), $('trimDebris')];
+  cleanupFields.forEach(field => field.addEventListener('change', () => {
+    cleanupFields.forEach(other => { other.value = field.value; });
+    updateTrimUI();
+    saveState();
+  }));
 
   function showType(type){
     selectedType=type;
@@ -543,7 +565,7 @@ details summary{cursor:pointer;font-weight:800}
         div.className='item';
         div.innerHTML=`
           <div class="space">
-            <div><h3>${it.type}</h3><div class="muted">${it.hours.toFixed(2).replace(/\.00$/,'')} hr internal estimate</div></div>
+            <div><h3></h3><div class="muted">${it.hours.toFixed(2).replace(/\.00$/,'')} hr internal estimate</div></div>
             <div class="price">${money(it.price)}</div>
           </div>
           <div class="desc"></div>
@@ -553,10 +575,12 @@ details summary{cursor:pointer;font-weight:800}
             <button class="small copyFull">Copy Full Line</button>
             <button class="small danger remove">Remove</button>
           </div>`;
+        const name = lineItemName(it);
+        div.querySelector('h3').textContent = name;
         div.querySelector('.desc').textContent=it.description;
         div.querySelector('.internalNote').textContent=it.internalNote ? 'Internal: '+it.internalNote : '';
         div.querySelector('.copyDesc').addEventListener('click',()=>copyText(it.description,div.querySelector('.copyDesc')));
-        div.querySelector('.copyFull').addEventListener('click',()=>copyText(`${it.type} — ${money(it.price)}\n${it.description}`,div.querySelector('.copyFull')));
+        div.querySelector('.copyFull').addEventListener('click',()=>copyText(`${name} — ${money(it.price)}\n${it.description}`,div.querySelector('.copyFull')));
         div.querySelector('.remove').addEventListener('click',()=>{items.splice(i,1);render();});
         box.appendChild(div);
       });
@@ -588,7 +612,8 @@ details summary{cursor:pointer;font-weight:800}
     const internalNote=crane && (crane.picks>0 || crane.travel>0)
       ? 'Crane: '+crane.picks+' picks × '+crane.per+' hr; travel '+crane.travel+' hr; crane rate '+money(crane.rate)+'/hr; crane total '+crane.h+' hr, '+money(crane.cost)+'.'
       : '';
-    items.push({type:selectedType,hours:hrs+(crane?.h||0),price,description:desc,internalNote});
+    const cleanup = selectedType === 'Removal' || selectedType === 'Trim' ? $('removalDebris').value : undefined;
+    items.push({type:selectedType,cleanup,hours:hrs+(crane?.h||0),price,description:desc,internalNote});
     $('status').textContent='Line item added.';
     $('hours').value=''; $('treeLocation').value=''; $('notes').value='';
     if(selectedType==='Removal'){
@@ -911,7 +936,7 @@ details summary{cursor:pointer;font-weight:800}
         propertyId:$('jobberProperty').value,
         requestId:$('jobberRequest').value || undefined,
         salespersonId:salespersonPicker.value || undefined,
-        lineItems:items.map(it=>({name:({Removal:'Tree Removal',Trim:'Tree Trimming',Cable:'Cabling',Stump:'Stump Grinding'})[it.type]||it.type,description:it.description,quantity:1,unitPrice:it.price})),
+        lineItems:items.map(it=>({name:lineItemName(it),description:it.description,quantity:1,unitPrice:it.price})),
         internalNotes:items.map((it,i)=>it.internalNote?'Line item '+(i+1)+' — Tree Removal\n'+it.internalNote:'').filter(Boolean).join('\n\n')
       };
       const out=await jobberFetch('/api/jobber/quotes',{method:'POST',body:JSON.stringify(payload)});

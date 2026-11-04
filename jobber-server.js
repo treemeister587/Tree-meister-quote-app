@@ -328,7 +328,8 @@ app.post('/api/jobber/quotes', async (req,res)=>{
         saveToProductsAndServices: false
       }))
     };
-    const firstType = String(lineItems[0]?.name || '').trim().toLowerCase();
+    const firstType = String(lineItems[0]?.name || '').trim().toLowerCase()
+      .replace(/ \((?:leave all|leaving logs|leaving rounds)\)$/, '');
     const automaticTitle = ['removal','tree removal'].includes(firstType) ? 'Tree Removal'
       : ['trim','trimming','tree trimming'].includes(firstType) ? 'Tree Trimming'
       : ['stump','stump grinding'].includes(firstType) ? 'Stump Grinding'
