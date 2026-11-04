@@ -316,11 +316,37 @@ app.post('/api/jobber/quotes', async (req,res)=>{
     if(!clientId) return res.status(400).json({error:'Select a Jobber client first.'});
     if(!propertyId) return res.status(400).json({error:'Select a Jobber property first.'});
     if(!Array.isArray(lineItems) || !lineItems.length) return res.status(400).json({error:'Add at least one quote line item first.'});
+    const {quoteFields, supportsUnitCost} = await cachedResponse('quote-create-schema', 3600000, async () => {
+      const schema = await jobberGraphQL(`{
+        __type(name: "QuoteCreateAttributes") {
+          inputFields { name type { name ofType { name ofType { name ofType { name } } } } }
+        }
+      }`);
+      const quoteFields = schema.__type?.inputFields || [];
+      let lineItemType = quoteFields.find(field => field.name === 'lineItems')?.type;
+      while(lineItemType && !lineItemType.name) lineItemType = lineItemType.ofType;
+      if(!lineItemType?.name) throw new Error('Unable to determine the Jobber quote line item input.');
+      const lineItemSchema = await jobberGraphQL(
+        'query QuoteLineItemInput($name:String!){ __type(name:$name){ inputFields{ name } } }',
+        {name:lineItemType.name}
+      );
+      const lineItemFields = lineItemSchema.__type?.inputFields;
+      if(!lineItemFields) throw new Error('Unable to verify Jobber quote line item fields.');
+      return {quoteFields, supportsUnitCost:lineItemFields.some(field => field.name === 'unitCost')};
+    });
     const input = {
       clientId,
-      lineItems: lineItems.map(x=>({name:x.name||'Tree work', description:x.description||'', quantity:Number(x.quantity||1), unitPrice:Number(x.unitPrice||0), saveToProductsAndServices:false}))
+      propertyId,
+      lineItems: lineItems.map(item => ({
+        name: item.name || 'Tree work',
+        description: item.description || '',
+        quantity: 1,
+        // With quantity 1, the selling price is also the line total.
+        unitPrice: Number(item.unitPrice || 0),
+        ...(supportsUnitCost ? {unitCost: 0} : {}),
+        saveToProductsAndServices: false
+      }))
     };
-    input.propertyId = propertyId;
     const firstType = String(lineItems[0]?.name || '').trim().toLowerCase();
     const automaticTitle = ['removal','tree removal'].includes(firstType) ? 'Tree Removal'
       : ['trim','trimming','tree trimming'].includes(firstType) ? 'Tree Trimming'
@@ -330,15 +356,11 @@ app.post('/api/jobber/quotes', async (req,res)=>{
       : 'Tree Service Estimate';
     input.title = automaticTitle;
     if(requestId){
-      const schema = await jobberGraphQL('{ __type(name: "QuoteCreateAttributes") { inputFields { name } } }');
-      const fields = (schema.__type?.inputFields || []).map(f=>f.name);
-      if(!fields.includes('requestId')) return res.status(409).json({error:'Jobber does not expose request association on quoteCreate in this API version. No duplicate quote was created.'});
+      if(!quoteFields.some(field => field.name === 'requestId')) return res.status(409).json({error:'Jobber does not expose request association on quoteCreate in this API version. No duplicate quote was created.'});
       input.requestId = String(requestId);
     }
     if(salespersonId){
-      const schema=await jobberGraphQL('{ __type(name:"QuoteCreateAttributes"){ inputFields{ name type{ kind name ofType{ kind name } } } } }');
-      const fields=schema.__type?.inputFields||[];
-      const field=fields.find(f=>['salespersonId','salesPersonId'].includes(f.name));
+      const field=quoteFields.find(f=>['salespersonId','salesPersonId'].includes(f.name));
       if(!field)return res.status(409).json({error:'This Jobber API version does not expose salesperson assignment during quote creation. No quote was created. Please assign the salesperson in Jobber.'});
       input[field.name]=String(salespersonId);
     }
