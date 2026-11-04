@@ -123,6 +123,7 @@ app.get('/api/jobber/callback', async (req,res)=>{
     const data = await r.json();
     if(!r.ok) throw new Error(data.error_description || data.error || 'Authorization failed.');
     tokens = {...data, obtained_at:Date.now()};
+    responseCache.clear();
     res.redirect(FRONTEND_ORIGIN + '?jobber=connected');
   }catch(e){ res.status(500).send('Jobber connection failed: '+e.message); }
 });
@@ -298,21 +299,25 @@ async function attachInternalQuoteNote(quoteId, noteText){
   if(data.noteCreate?.userErrors?.length)throw new Error(data.noteCreate.userErrors.map(e=>e.message).join('; '));
 }
 
-app.get('/api/jobber/salespeople',async(req,res)=>{
+async function getActiveSalespeople(){
+  return cachedResponse('active-salespeople', 60000, async () => {
+    const data = await jobberGraphQL('query QuoteSalespeople { users(first:100){ nodes{ id name { first last } status } } }');
+    return (data.users?.nodes || []).filter(user => String(user.status || '').toUpperCase() === 'ACTIVATED').map(user => ({
+      id: user.id,
+      name: [user.name?.first, user.name?.last].filter(Boolean).join(' ').trim()
+    })).filter(user => user.id && user.name);
+  });
+}
+
+app.get('/api/jobber/salespeople', async (req, res) => {
   try{
-    // Only offer activated users; never silently list deactivated accounts.
-    const data=await jobberGraphQL('query QuoteSalespeople { users(first:100){ nodes{ id name { first last } status } } }');
-    const users=(data.users?.nodes||[]).filter(u=>String(u.status||'').toUpperCase()==='ACTIVATED').map(u=>({
-      id:u.id,
-      name:[u.name?.first,u.name?.last].filter(Boolean).join(' ').trim()
-    })).filter(u=>u.id && u.name);
-    res.json({salespeople:users});
-  }catch(e){res.status(500).json({error:'Unable to load active Jobber team members: '+e.message});}
+    res.json({salespeople: await getActiveSalespeople()});
+  }catch(e){ res.status(500).json({error:'Unable to load active Jobber team members: '+e.message}); }
 });
 
 app.post('/api/jobber/quotes', async (req,res)=>{
   try{
-    const {clientId, propertyId, lineItems, title, requestId, internalNotes, salespersonId} = req.body || {};
+    const {clientId, propertyId, lineItems, requestId, internalNotes} = req.body || {};
     if(!clientId) return res.status(400).json({error:'Select a Jobber client first.'});
     if(!propertyId) return res.status(400).json({error:'Select a Jobber property first.'});
     if(!Array.isArray(lineItems) || !lineItems.length) return res.status(400).json({error:'Add at least one quote line item first.'});
@@ -337,19 +342,24 @@ app.post('/api/jobber/quotes', async (req,res)=>{
       : firstType === 'crane' ? 'Crane Service'
       : 'Tree Service Estimate';
     input.title = automaticTitle;
-    if(requestId){
+    const salespeople = await getActiveSalespeople();
+    const matches = salespeople.filter(user => user.name.toLowerCase() === 'mateo contreras');
+    if(matches.length !== 1){
+      return res.status(409).json({error:'Could not identify one active Jobber user named Mateo Contreras. No quote was created.'});
+    }
+    const fields = await cachedResponse('quote-create-fields', 3600000, async () => {
       const schema = await jobberGraphQL('{ __type(name: "QuoteCreateAttributes") { inputFields { name } } }');
-      const fields = (schema.__type?.inputFields || []).map(f=>f.name);
+      return (schema.__type?.inputFields || []).map(field => field.name);
+    });
+    if(requestId){
       if(!fields.includes('requestId')) return res.status(409).json({error:'Jobber does not expose request association on quoteCreate in this API version. No duplicate quote was created.'});
       input.requestId = String(requestId);
     }
-    if(salespersonId){
-      const schema=await jobberGraphQL('{ __type(name:"QuoteCreateAttributes"){ inputFields{ name type{ kind name ofType{ kind name } } } } }');
-      const fields=schema.__type?.inputFields||[];
-      const field=fields.find(f=>['salespersonId','salesPersonId'].includes(f.name));
-      if(!field)return res.status(409).json({error:'This Jobber API version does not expose salesperson assignment during quote creation. No quote was created. Please assign the salesperson in Jobber.'});
-      input[field.name]=String(salespersonId);
+    const salespersonField = fields.find(field => ['salespersonId', 'salesPersonId'].includes(field));
+    if(!salespersonField){
+      return res.status(409).json({error:'This Jobber API version cannot assign Mateo during quote creation. No quote was created.'});
     }
+    input[salespersonField] = matches[0].id;
     const mutation = `mutation CreateQuote($attributes:QuoteCreateAttributes!){ quoteCreate(attributes:$attributes){ quote{ id quoteNumber } userErrors{ message path } } }`;
     const data = await jobberGraphQL(mutation, {attributes:input});
     const result = data.quoteCreate;
